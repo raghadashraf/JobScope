@@ -250,19 +250,7 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 ---
 
-## 👨‍💻 Author
 
-<div align="center">
-
-**Raghad Ashraf**
-
-🎓 Computer Science Student at MIU Egypt  
-💼 Aspiring Mobile Developer | AI Enthusiast
-
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/raghadashraf)
-[![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:raghad2201709@miuegypt.edu.eg)
-
-</div>
 
 ---
 
@@ -275,13 +263,3 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 - 💜 Open source community
 
 ---
-
-<div align="center">
-
-### ⭐ If you like this project, give it a star!
-
-**Made with 💙 using Flutter**
-
-*Last updated: April 2026*
-
-</div>
