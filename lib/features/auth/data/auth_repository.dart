@@ -1,10 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../../data/models/user_model.dart';
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
@@ -41,8 +45,7 @@ class AuthRepository {
       email: email.trim(),
       password: password,
     );
-    final doc =
-        await _firestore.collection('users').doc(cred.user!.uid).get();
+    final doc = await _firestore.collection('users').doc(cred.user!.uid).get();
     if (!doc.exists) {
       throw FirebaseAuthException(
         code: 'user-not-found',
@@ -62,6 +65,38 @@ class AuthRepository {
 
   Future<void> sendPasswordResetEmail(String email) async {
     await _auth.sendPasswordResetEmail(email: email.trim());
+  }
+
+  Future<String> uploadProfilePhoto({
+    required String uid,
+    required Uint8List imageBytes,
+  }) async {
+    final ref = _storage.ref().child('profile_photos').child('$uid.jpg');
+
+    final uploadTask = await ref.putData(
+      imageBytes,
+      SettableMetadata(contentType: 'image/jpeg'),
+    );
+
+    return await uploadTask.ref.getDownloadURL();
+  }
+
+  Future<void> updateProfile({
+    required String uid,
+    required String name,
+    required String? phone,
+    required String? photoUrl,
+  }) async {
+    await _firestore.collection('users').doc(uid).update({
+      'name': name,
+      'phone': phone,
+      'photoUrl': photoUrl,
+    });
+
+    await _auth.currentUser?.updateDisplayName(name);
+    if (photoUrl != null) {
+      await _auth.currentUser?.updatePhotoURL(photoUrl);
+    }
   }
 
   Future<void> signOut() => _auth.signOut();

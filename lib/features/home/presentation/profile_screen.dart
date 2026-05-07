@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../auth/presentation/role_selection_screen.dart';
+import '../../auth/presentation/edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -24,20 +25,25 @@ class ProfileScreen extends ConsumerWidget {
         child: userAsync.when(
           data: (user) => Column(
             children: [
-              CircleAvatar(
-                radius: 48,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                child: Text(
-                  user?.name.isNotEmpty == true
-                      ? user!.name[0].toUpperCase()
-                      : 'U',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
+                CircleAvatar(
+                    radius: 48,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    backgroundImage: user?.photoUrl != null
+                        ? NetworkImage(user!.photoUrl!)
+                        : null,
+                    child: user?.photoUrl == null
+                        ? Text(
+                            user?.name.isNotEmpty == true
+                                ? user!.name[0].toUpperCase()
+                                : 'U',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : null,
                   ),
-                ),
-              ),
               const SizedBox(height: 16),
               Text(user?.name ?? 'User',
                   style: GoogleFonts.plusJakartaSans(
@@ -49,7 +55,16 @@ class ProfileScreen extends ConsumerWidget {
                   style: GoogleFonts.inter(
                       fontSize: 14, color: AppColors.textSecondary)),
               const SizedBox(height: 32),
-              _menuTile(Icons.edit_outlined, 'Edit Profile', () {}),
+              _menuTile(Icons.edit_outlined, 'Edit Profile', () {
+                    if (user != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditProfileScreen(user: user),
+                        ),
+                      );
+                    }
+                  }),
               _menuTile(Icons.description_outlined, 'My CV', () {}),
               _menuTile(Icons.notifications_outlined, 'Notifications', () {}),
               _menuTile(Icons.settings_outlined, 'Settings', () {}),

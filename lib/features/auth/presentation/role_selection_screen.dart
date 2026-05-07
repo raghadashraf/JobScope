@@ -155,16 +155,19 @@ class _RoleCardState extends State<_RoleCard> {
               Navigator.push(
                 context,
                 PageRouteBuilder(
-                  pageBuilder: (_, __, ___) => LoginScreen(role: widget.role),
-                  transitionsBuilder: (_, animation, __, child) {
+                  pageBuilder: (_, _, _) => LoginScreen(role: widget.role),
+                  transitionsBuilder: (_, animation, _, child) {
                     return SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(1, 0),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      )),
+                      position:
+                          Tween<Offset>(
+                            begin: const Offset(1, 0),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            ),
+                          ),
                       child: child,
                     );
                   },

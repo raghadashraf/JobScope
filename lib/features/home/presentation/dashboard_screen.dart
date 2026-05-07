@@ -25,10 +25,13 @@ class DashboardScreen extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Good morning 👋',
-                          style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: AppColors.textSecondary)),
+                      Text(
+                        'Good morning 👋',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       userAsync.when(
                         data: (user) => Text(
@@ -40,39 +43,51 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                         ),
                         loading: () => Container(
-                          width: 150, height: 24,
+                          width: 150,
+                          height: 24,
                           decoration: BoxDecoration(
                             color: AppColors.surfaceVariant,
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
-                        error: (_, __) => Text('Welcome',
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 24, fontWeight: FontWeight.w700)),
+                        error: (_, _) => Text(
+                          'Welcome',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   Stack(
                     children: [
                       Container(
-                        width: 44, height: 44,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppColors.border),
                         ),
-                        child: const Icon(Icons.notifications_outlined,
-                            color: AppColors.textPrimary),
+                        child: const Icon(
+                          Icons.notifications_outlined,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       Positioned(
-                        right: 8, top: 8,
+                        right: 8,
+                        top: 8,
                         child: Container(
-                          width: 10, height: 10,
+                          width: 10,
+                          height: 10,
                           decoration: BoxDecoration(
                             color: AppColors.error,
                             shape: BoxShape.circle,
                             border: Border.all(
-                                color: AppColors.surface, width: 2),
+                              color: AppColors.surface,
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
@@ -105,42 +120,54 @@ class DashboardScreen extends ConsumerWidget {
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.auto_awesome_rounded,
-                              color: Colors.white, size: 22),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(width: 12),
-                        Text('CV Profile Strength',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            )),
+                        Text(
+                          'CV Profile Strength',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 20),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('0',
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                height: 1)),
-                        Text('%',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.8),
-                            )),
+                        Text(
+                          '0',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 48,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1,
+                          ),
+                        ),
+                        Text(
+                          '%',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text('Upload your CV to get AI-powered analysis',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.85),
-                        )),
+                    Text(
+                      'Upload your CV to get AI-powered analysis',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -154,9 +181,12 @@ class DashboardScreen extends ConsumerWidget {
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           textStyle: GoogleFonts.inter(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -167,36 +197,42 @@ class DashboardScreen extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(
-                      child: _statCard(
-                    icon: Icons.work_rounded,
-                    label: 'Job Matches',
-                    value: '0',
-                    color: AppColors.primary,
-                  )),
+                    child: _statCard(
+                      icon: Icons.work_rounded,
+                      label: 'Job Matches',
+                      value: '0',
+                      color: AppColors.primary,
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
-                      child: _statCard(
-                    icon: Icons.send_rounded,
-                    label: 'Applied',
-                    value: '0',
-                    color: AppColors.secondary,
-                  )),
+                    child: _statCard(
+                      icon: Icons.send_rounded,
+                      label: 'Applied',
+                      value: '0',
+                      color: AppColors.secondary,
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
-                      child: _statCard(
-                    icon: Icons.check_circle_rounded,
-                    label: 'Shortlisted',
-                    value: '0',
-                    color: AppColors.success,
-                  )),
+                    child: _statCard(
+                      icon: Icons.check_circle_rounded,
+                      label: 'Shortlisted',
+                      value: '0',
+                      color: AppColors.success,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
-              Text('Quick Actions',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
+              Text(
+                'Quick Actions',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
               const SizedBox(height: 16),
               _actionTile(
                 icon: Icons.psychology_rounded,
@@ -225,9 +261,13 @@ class DashboardScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Recommended for You',
-                      style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18, fontWeight: FontWeight.w700)),
+                  Text(
+                    'Recommended for You',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   TextButton(onPressed: () {}, child: const Text('See all')),
                 ],
               ),
@@ -241,15 +281,20 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.work_off_outlined,
-                        size: 48, color: AppColors.textTertiary),
+                    Icon(
+                      Icons.work_off_outlined,
+                      size: 48,
+                      color: AppColors.textTertiary,
+                    ),
                     const SizedBox(height: 12),
-                    Text('Upload your CV to see personalized job matches',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        )),
+                    Text(
+                      'Upload your CV to see personalized job matches',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -286,14 +331,21 @@ class DashboardScreen extends ConsumerWidget {
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(height: 12),
-          Text(value,
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary)),
-          Text(label,
-              style: GoogleFonts.inter(
-                  fontSize: 11, color: AppColors.textSecondary)),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -333,21 +385,30 @@ class DashboardScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary)),
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: AppColors.textSecondary)),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  size: 14, color: AppColors.textTertiary),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: AppColors.textTertiary,
+              ),
             ],
           ),
         ),

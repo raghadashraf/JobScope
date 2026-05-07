@@ -232,7 +232,7 @@ Contributions, issues, and feature requests are welcome!
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-📖 See [SETUP.md](./SETUP.md) for development environment setup.
+📖 See [SETUP.MD](./SETUP.MD) for development environment setup.
 
 ---
 

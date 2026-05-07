@@ -25,28 +25,36 @@ class RecruiterDashboardScreen extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Welcome back 👋',
-                          style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: AppColors.textSecondary)),
+                      Text(
+                        'Welcome back 👋',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       userAsync.when(
-                        data: (user) => Text(user?.name ?? 'Recruiter',
-                            style: GoogleFonts.plusJakartaSans(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary)),
+                        data: (user) => Text(
+                          user?.name ?? 'Recruiter',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
                         loading: () => const SizedBox(height: 24),
-                        error: (_, __) => const Text('Recruiter'),
+                        error: (_, _) => const Text('Recruiter'),
                       ),
                     ],
                   ),
                   Container(
-                    width: 44, height: 44,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border)),
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
                     child: const Icon(Icons.notifications_outlined),
                   ),
                 ],
@@ -68,23 +76,32 @@ class RecruiterDashboardScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Active Job Postings',
-                        style: GoogleFonts.inter(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600)),
+                    Text(
+                      'Active Job Postings',
+                      style: GoogleFonts.inter(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 16),
-                    Text('0',
-                        style: GoogleFonts.plusJakartaSans(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            height: 1)),
+                    Text(
+                      '0',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Text('Post your first job to start hiring',
-                        style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.85))),
+                    Text(
+                      'Post your first job to start hiring',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -92,26 +109,32 @@ class RecruiterDashboardScreen extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(
-                      child: _statCard(
-                    icon: Icons.people_rounded,
-                    label: 'Total Applicants',
-                    value: '0',
-                    color: AppColors.primary,
-                  )),
+                    child: _statCard(
+                      icon: Icons.people_rounded,
+                      label: 'Total Applicants',
+                      value: '0',
+                      color: AppColors.primary,
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
-                      child: _statCard(
-                    icon: Icons.star_rounded,
-                    label: 'Shortlisted',
-                    value: '0',
-                    color: AppColors.accent,
-                  )),
+                    child: _statCard(
+                      icon: Icons.star_rounded,
+                      label: 'Shortlisted',
+                      value: '0',
+                      color: AppColors.accent,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
-              Text('Recent Activity',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18, fontWeight: FontWeight.w700)),
+              Text(
+                'Recent Activity',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(32),
@@ -122,12 +145,19 @@ class RecruiterDashboardScreen extends ConsumerWidget {
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.inbox_outlined,
-                        size: 48, color: AppColors.textTertiary),
+                    Icon(
+                      Icons.inbox_outlined,
+                      size: 48,
+                      color: AppColors.textTertiary,
+                    ),
                     const SizedBox(height: 12),
-                    Text('No activity yet',
-                        style: GoogleFonts.inter(
-                            color: AppColors.textSecondary, fontSize: 14)),
+                    Text(
+                      'No activity yet',
+                      style: GoogleFonts.inter(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -163,14 +193,21 @@ class RecruiterDashboardScreen extends ConsumerWidget {
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(height: 12),
-          Text(value,
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary)),
-          Text(label,
-              style: GoogleFonts.inter(
-                  fontSize: 11, color: AppColors.textSecondary)),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );
