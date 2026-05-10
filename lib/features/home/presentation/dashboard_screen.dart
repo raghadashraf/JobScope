@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../cv_management/data/cv_providers.dart';
+import '../../cv_management/presentation/cv_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -10,6 +12,8 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserProvider);
+    final cvAsync = ref.watch(cvStreamProvider);
+    final uploadState = ref.watch(cvUploadProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -19,6 +23,7 @@ class DashboardScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Greeting ─────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -42,21 +47,10 @@ class DashboardScreen extends ConsumerWidget {
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        loading: () => Container(
-                          width: 150,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        error: (_, _) => Text(
-                          'Welcome',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        loading: () => _shimmerBox(150, 24),
+                        error: (_, e) => Text('Welcome',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontSize: 24, fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),
@@ -70,10 +64,8 @@ class DashboardScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppColors.border),
                         ),
-                        child: const Icon(
-                          Icons.notifications_outlined,
-                          color: AppColors.textPrimary,
-                        ),
+                        child: const Icon(Icons.notifications_outlined,
+                            color: AppColors.textPrimary),
                       ),
                       Positioned(
                         right: 8,
@@ -84,10 +76,8 @@ class DashboardScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: AppColors.error,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.surface,
-                              width: 2,
-                            ),
+                            border:
+                                Border.all(color: AppColors.surface, width: 2),
                           ),
                         ),
                       ),
@@ -96,143 +86,62 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+
+              // ── CV Strength card ─────────────────────────────────────
+              cvAsync.when(
+                data: (cv) => _cvStrengthCard(
+                  context: context,
+                  ref: ref,
+                  strength: cv?.profileStrength ?? 0,
+                  hasCv: cv != null,
+                  isUploading:
+                      uploadState.status != CvUploadStatus.idle &&
+                      uploadState.status != CvUploadStatus.error &&
+                      uploadState.status != CvUploadStatus.done,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'CV Profile Strength',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.9),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '0',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            height: 1,
-                          ),
-                        ),
-                        Text(
-                          '%',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Upload your CV to get AI-powered analysis',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.85),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.upload_file_rounded, size: 18),
-                        label: const Text('Upload CV'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.primary,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          textStyle: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                loading: () => _shimmerBox(double.infinity, 180),
+                error: (_, e) => _cvStrengthCard(
+                    context: context,
+                    ref: ref,
+                    strength: 0,
+                    hasCv: false,
+                    isUploading: false),
               ),
               const SizedBox(height: 24),
+
+              // ── Stats row ────────────────────────────────────────────
               Row(
                 children: [
                   Expanded(
-                    child: _statCard(
-                      icon: Icons.work_rounded,
-                      label: 'Job Matches',
-                      value: '0',
-                      color: AppColors.primary,
-                    ),
-                  ),
+                      child: _statCard(
+                          icon: Icons.work_rounded,
+                          label: 'Job Matches',
+                          value: '0',
+                          color: AppColors.primary)),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _statCard(
-                      icon: Icons.send_rounded,
-                      label: 'Applied',
-                      value: '0',
-                      color: AppColors.secondary,
-                    ),
-                  ),
+                      child: _statCard(
+                          icon: Icons.send_rounded,
+                          label: 'Applied',
+                          value: '0',
+                          color: AppColors.secondary)),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _statCard(
-                      icon: Icons.check_circle_rounded,
-                      label: 'Shortlisted',
-                      value: '0',
-                      color: AppColors.success,
-                    ),
-                  ),
+                      child: _statCard(
+                          icon: Icons.check_circle_rounded,
+                          label: 'Shortlisted',
+                          value: '0',
+                          color: AppColors.success)),
                 ],
               ),
               const SizedBox(height: 24),
-              Text(
-                'Quick Actions',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+
+              // ── Quick actions ─────────────────────────────────────────
+              Text('Quick Actions',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary)),
               const SizedBox(height: 16),
               _actionTile(
                 icon: Icons.psychology_rounded,
@@ -257,50 +166,148 @@ class DashboardScreen extends ConsumerWidget {
                 subtitle: 'Test your technical skills',
                 onTap: () {},
               ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Recommended for You',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  TextButton(onPressed: () {}, child: const Text('See all')),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.work_off_outlined,
-                      size: 48,
-                      color: AppColors.textTertiary,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Upload your CV to see personalized job matches',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 20),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cvStrengthCard({
+    required BuildContext context,
+    required WidgetRef ref,
+    required int strength,
+    required bool hasCv,
+    required bool isUploading,
+  }) {
+    return GestureDetector(
+      onTap: hasCv
+          ? () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const CvScreen()))
+          : null,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.auto_awesome_rounded,
+                      color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'CV Profile Strength',
+                  style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.9)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '$strength',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1),
+                ),
+                Text(
+                  '%',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.8)),
+                ),
+              ],
+            ),
+            if (hasCv) ...[
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: strength / 100,
+                  backgroundColor: Colors.white.withValues(alpha: 0.3),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Colors.white),
+                  minHeight: 5,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Text(
+              hasCv
+                  ? 'Tap to view your parsed CV details'
+                  : 'Upload your CV to get AI-powered analysis',
+              style: GoogleFonts.inter(
+                  fontSize: 13, color: Colors.white.withValues(alpha: 0.85)),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: isUploading
+                    ? null
+                    : () {
+                        if (hasCv) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const CvScreen()),
+                          );
+                        } else {
+                          ref.read(cvUploadProvider.notifier).pickAndUpload();
+                        }
+                      },
+                icon: isUploading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.primary))
+                    : Icon(
+                        hasCv
+                            ? Icons.visibility_rounded
+                            : Icons.upload_file_rounded,
+                        size: 18),
+                label: Text(hasCv ? 'View CV' : 'Upload CV'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.primary,
+                  elevation: 0,
+                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.7),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  textStyle: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -331,21 +338,14 @@ class DashboardScreen extends ConsumerWidget {
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(value,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary)),
+          Text(label,
+              style: GoogleFonts.inter(
+                  fontSize: 11, color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -385,34 +385,33 @@ class DashboardScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
+                    Text(title,
+                        style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary)),
                     const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                    Text(subtitle,
+                        style: GoogleFonts.inter(
+                            fontSize: 12, color: AppColors.textSecondary)),
                   ],
                 ),
               ),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: AppColors.textTertiary,
-              ),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  size: 14, color: AppColors.textTertiary),
             ],
           ),
         ),
       ),
     );
   }
+
+  Widget _shimmerBox(double width, double height) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(16),
+        ),
+      );
 }
