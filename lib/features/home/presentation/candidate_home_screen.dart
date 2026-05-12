@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import 'dashboard_screen.dart';
-import 'jobs_screen.dart';
-import 'applications_screen.dart';
+import '../../job_listing/presentation/jobs_screen.dart';
+import '../../applications/presentation/applications_screen.dart';
 import 'profile_screen.dart';
 
 class CandidateHomeScreen extends ConsumerStatefulWidget {

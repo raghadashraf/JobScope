@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import 'recruiter_dashboard_screen.dart';
 import 'post_job_screen.dart';
-import 'applicants_screen.dart';
+import '../../recruiter/presentation/recruiter_jobs_screen.dart';
 import 'profile_screen.dart';
 
 class RecruiterHomeScreen extends ConsumerStatefulWidget {
@@ -21,14 +21,14 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen> {
   final List<Widget> _screens = const [
     RecruiterDashboardScreen(),
     PostJobScreen(),
-    ApplicantsScreen(),
+    RecruiterJobsScreen(),
     ProfileScreen(),
   ];
 
   final List<_NavItem> _navItems = const [
     _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
     _NavItem(icon: Icons.add_box_outlined, label: 'Post Job'),
-    _NavItem(icon: Icons.people_outline_rounded, label: 'Applicants'),
+    _NavItem(icon: Icons.people_outline_rounded, label: 'My Jobs'),
     _NavItem(icon: Icons.person_outline_rounded, label: 'Profile'),
   ];
 

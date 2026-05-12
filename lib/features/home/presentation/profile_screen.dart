@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../auth/presentation/edit_profile_screen.dart';
+import '../../auth/presentation/role_selection_screen.dart';
 import '../../cv_management/data/cv_providers.dart';
 import '../../cv_management/presentation/cv_screen.dart';
 
@@ -287,9 +288,16 @@ class ProfileScreen extends ConsumerWidget {
                 style: GoogleFonts.inter(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              ref.read(authRepositoryProvider).signOut();
+              await ref.read(authRepositoryProvider).signOut();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                      builder: (_) => const RoleSelectionScreen()),
+                  (_) => false,
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
