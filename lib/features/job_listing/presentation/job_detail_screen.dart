@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../data/models/job_model.dart';
 import '../data/job_providers.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../applications/data/application_providers.dart';
 
 class JobDetailScreen extends ConsumerWidget {
   final JobModel job;
@@ -15,6 +16,13 @@ class JobDetailScreen extends ConsumerWidget {
     final bookmarkedIds = ref.watch(bookmarkedIdsProvider).value ?? {};
     final isBookmarked = bookmarkedIds.contains(job.id);
     final user = ref.watch(firebaseUserProvider).value;
+
+    // Real-time check: has this user already applied?
+    final hasAppliedAsync = ref.watch(hasAppliedProvider(job.id));
+    final hasApplied = hasAppliedAsync.value ?? false;
+
+    // Apply action state
+    final applyState = ref.watch(applyNotifierProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -131,7 +139,39 @@ class JobDetailScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+
+                  // ── Already applied banner ───────────────────────────────
+                  if (hasApplied) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppColors.success.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle_rounded,
+                              color: AppColors.success, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'You\'ve already applied to this job',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // ── Info chips ───────────────────────────────────────────
                   Wrap(
@@ -176,7 +216,8 @@ class JobDetailScreen extends ConsumerWidget {
                               Container(
                                 width: 6,
                                 height: 6,
-                                margin: const EdgeInsets.only(top: 6, right: 10),
+                                margin: const EdgeInsets.only(
+                                    top: 6, right: 10),
                                 decoration: const BoxDecoration(
                                   color: AppColors.primary,
                                   shape: BoxShape.circle,
@@ -210,8 +251,8 @@ class JobDetailScreen extends ConsumerWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 14, vertical: 7),
                                 decoration: BoxDecoration(
-                                  color:
-                                      AppColors.primary.withValues(alpha: 0.07),
+                                  color: AppColors.primary
+                                      .withValues(alpha: 0.07),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                       color: AppColors.primary
@@ -236,7 +277,7 @@ class JobDetailScreen extends ConsumerWidget {
         ],
       ),
 
-      // ── Apply button ─────────────────────────────────────────────────────
+      // ── Bottom apply bar ──────────────────────────────────────────────────
       bottomNavigationBar: Container(
         padding: EdgeInsets.only(
           left: 20,
@@ -248,34 +289,47 @@ class JobDetailScreen extends ConsumerWidget {
           color: AppColors.surface,
           border: const Border(top: BorderSide(color: AppColors.border)),
         ),
-        child: ElevatedButton(
-          onPressed: () => _showApplyConfirm(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
-            elevation: 0,
-          ),
-          child: Text(
-            'Apply Now',
-            style: GoogleFonts.inter(
-                fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-        ),
+        child: hasApplied
+            ? _AlreadyAppliedButton()
+            : ElevatedButton(
+                onPressed: applyState.status == ApplyStatus.loading
+                    ? null
+                    : () => _showApplyConfirm(context, ref),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor:
+                      AppColors.primary.withValues(alpha: 0.5),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                child: applyState.status == ApplyStatus.loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(
+                        'Apply Now',
+                        style: GoogleFonts.inter(
+                            fontSize: 16, fontWeight: FontWeight.w700),
+                      ),
+              ),
       ),
     );
   }
 
-  void _showApplyConfirm(BuildContext context) {
+  void _showApplyConfirm(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => Padding(
+      builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -307,7 +361,7 @@ class JobDetailScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(ctx),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -323,18 +377,49 @@ class JobDetailScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Applied to ${job.title} at ${job.company}!'),
-                          backgroundColor: AppColors.success,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                      );
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      await ref.read(applyNotifierProvider.notifier).apply(
+                            jobId: job.id,
+                            jobTitle: job.title,
+                            company: job.company,
+                          );
+
+                      if (!context.mounted) return;
+                      final state = ref.read(applyNotifierProvider);
+
+                      if (state.status == ApplyStatus.success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(children: [
+                              const Icon(Icons.check_circle_rounded,
+                                  color: Colors.white, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                  child: Text(
+                                      'Applied to ${job.title} at ${job.company}!')),
+                            ]),
+                            backgroundColor: AppColors.success,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                        );
+                        ref.read(applyNotifierProvider.notifier).reset();
+                      } else if (state.status == ApplyStatus.error ||
+                          state.status == ApplyStatus.alreadyApplied) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                state.errorMessage ?? 'Something went wrong'),
+                            backgroundColor: AppColors.error,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                        );
+                        ref.read(applyNotifierProvider.notifier).reset();
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
@@ -345,8 +430,8 @@ class JobDetailScreen extends ConsumerWidget {
                       elevation: 0,
                     ),
                     child: Text('Confirm',
-                        style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w700)),
+                        style:
+                            GoogleFonts.inter(fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
@@ -401,5 +486,37 @@ class JobDetailScreen extends ConsumerWidget {
       default:
         return type;
     }
+  }
+}
+
+// ── Already applied button ────────────────────────────────────────────────────
+class _AlreadyAppliedButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.check_circle_rounded,
+              color: AppColors.success, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            'Already Applied',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.success,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

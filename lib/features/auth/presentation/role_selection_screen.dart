@@ -146,7 +146,7 @@ class _RoleCardState extends State<_RoleCard> {
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        transform: Matrix4.identity()..translate(0.0, _isHovered ? -4.0 : 0.0, 0.0),
+        transform: Matrix4.identity()..translate(0.0, _isHovered ? -4.0 : 0.0, 0.0), // ignore: deprecated_member_use,
         child: Material(
           color: Colors.transparent,
           child: InkWell(

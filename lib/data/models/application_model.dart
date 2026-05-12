@@ -14,7 +14,7 @@ class ApplicationModel {
   final String? cvUrl;
   final ApplicationStatus status;
   final DateTime appliedAt;
-  final int? matchScore; // 0–100, set by AI matching
+  final int? matchScore;
 
   ApplicationModel({
     required this.id,
@@ -68,19 +68,8 @@ class ApplicationModel {
       );
 
   factory ApplicationModel.fromDoc(DocumentSnapshot doc) =>
-      ApplicationModel.fromMap(doc.data() as Map<String, dynamic>,
-          docId: doc.id);
-
-  String get statusLabel {
-    switch (status) {
-      case ApplicationStatus.pending:
-        return 'Under Review';
-      case ApplicationStatus.shortlisted:
-        return 'Shortlisted';
-      case ApplicationStatus.rejected:
-        return 'Not Selected';
-      case ApplicationStatus.accepted:
-        return 'Accepted';
-    }
-  }
+      ApplicationModel.fromMap(
+        doc.data() as Map<String, dynamic>,
+        docId: doc.id,
+      );
 }
