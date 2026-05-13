@@ -11,22 +11,23 @@ class JobRepository {
   Stream<List<JobModel>> jobsStream() {
     return _jobs
         .where('isActive', isEqualTo: true)
-        .orderBy('postedAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map(JobModel.fromDoc).toList());
+        .map((snap) {
+          final jobs = snap.docs.map(JobModel.fromDoc).toList();
+          jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+          return jobs;
+        });
   }
 
   // ─── Paginated fetch ───────────────────────────────────────────────────────
   Future<List<JobModel>> fetchJobs({DocumentSnapshot? lastDoc}) async {
-    Query query = _jobs
+    final snap = await _jobs
         .where('isActive', isEqualTo: true)
-        .orderBy('postedAt', descending: true)
-        .limit(_pageSize);
-
-    if (lastDoc != null) query = query.startAfterDocument(lastDoc);
-
-    final snap = await query.get();
-    return snap.docs.map(JobModel.fromDoc).toList();
+        .limit(_pageSize)
+        .get();
+    final jobs = snap.docs.map(JobModel.fromDoc).toList();
+    jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+    return jobs;
   }
 
   // ─── Fetch single job ──────────────────────────────────────────────────────
@@ -41,16 +42,17 @@ class JobRepository {
     final lower = query.toLowerCase();
     final snap = await _jobs
         .where('isActive', isEqualTo: true)
-        .orderBy('postedAt', descending: true)
         .get();
 
-    return snap.docs
+    final results = snap.docs
         .map(JobModel.fromDoc)
         .where((j) =>
             j.title.toLowerCase().contains(lower) ||
             j.company.toLowerCase().contains(lower) ||
             j.location.toLowerCase().contains(lower))
         .toList();
+    results.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+    return results;
   }
 
   // ─── Filter jobs ──────────────────────────────────────────────────────────
@@ -62,10 +64,9 @@ class JobRepository {
   }) async {
     final snap = await _jobs
         .where('isActive', isEqualTo: true)
-        .orderBy('postedAt', descending: true)
         .get();
 
-    return snap.docs.map(JobModel.fromDoc).where((job) {
+    final filtered = snap.docs.map(JobModel.fromDoc).where((job) {
       if (skills != null && skills.isNotEmpty) {
         final jobSkillsLower = job.skills.map((s) => s.toLowerCase()).toList();
         final hasSkill = skills
@@ -85,6 +86,8 @@ class JobRepository {
       }
       return true;
     }).toList();
+    filtered.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+    return filtered;
   }
 
   // ─── Recruiter: Create job ─────────────────────────────────────────────────
