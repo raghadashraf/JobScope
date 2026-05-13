@@ -11,8 +11,9 @@ class CvParserService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final AiService _aiService = AiService();
 
-  /// Full CV pipeline: pick → upload → extract → parse → save.
-  Future<CvModel> pickUploadAndParse({required String uid}) async {
+  /// Stage 1: pick a file and upload it to Storage.
+  /// Returns enough data for stage 2 without blocking on Gemini.
+  Future<CvUploadResult> pickAndUploadFile({required String uid}) async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx'],
@@ -30,30 +31,37 @@ class CvParserService {
     final fileName = file.name;
     final extension = file.extension?.toLowerCase() ?? '';
 
+    final cvText = _extractText(bytes, extension);
+    if (cvText.trim().isEmpty) {
+      throw Exception(
+        'Could not extract text from the file. '
+        'Make sure the PDF is not a scanned image.',
+      );
+    }
+
     final fileUrl = await _uploadToStorage(
       uid: uid,
       bytes: bytes,
       fileName: fileName,
     );
 
-    final cvText = _extractText(bytes, extension);
-    if (cvText.trim().isEmpty) {
-      throw Exception(
-        'Could not extract text from file. Please ensure the PDF is not scanned/image-only.',
-      );
-    }
+    return CvUploadResult(
+        uid: uid, fileUrl: fileUrl, fileName: fileName, cvText: cvText);
+  }
 
+  /// Stage 2: call Gemini to parse the CV text, then save to Firestore.
+  Future<CvModel> parseAndSave(CvUploadResult upload) async {
     final cvModel = await _aiService.parseCv(
-      cvText: cvText,
-      uid: uid,
-      fileUrl: fileUrl,
-      fileName: fileName,
+      cvText: upload.cvText,
+      uid: upload.uid,
+      fileUrl: upload.fileUrl,
+      fileName: upload.fileName,
     );
 
     await _saveToFirestore(cvModel);
 
-    await _firestore.collection('users').doc(uid).update({
-      'cvUrl': fileUrl,
+    await _firestore.collection('users').doc(upload.uid).update({
+      'cvUrl': upload.fileUrl,
       'profileStrength': cvModel.profileStrength,
     });
 
@@ -138,4 +146,17 @@ class CvParserService {
         .snapshots()
         .map((doc) => doc.exists ? CvModel.fromMap(doc.data()!) : null);
   }
+}
+
+class CvUploadResult {
+  final String uid;
+  final String fileUrl;
+  final String fileName;
+  final String cvText;
+  const CvUploadResult({
+    required this.uid,
+    required this.fileUrl,
+    required this.fileName,
+    required this.cvText,
+  });
 }
