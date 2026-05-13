@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_router.dart';
 import '../../../data/models/job_model.dart';
 import '../../job_listing/data/job_providers.dart';
-import '../../home/presentation/post_job_screen.dart';
 import '../data/recruiter_providers.dart';
-import 'job_applicants_screen.dart';
 
 class RecruiterJobsScreen extends ConsumerWidget {
   const RecruiterJobsScreen({super.key});
@@ -70,20 +70,10 @@ class RecruiterJobsScreen extends ConsumerWidget {
                         itemBuilder: (_, i) => _JobCard(
                           job: jobs[i],
                           applicantCount: countByJob[jobs[i].id] ?? 0,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  JobApplicantsScreen(job: jobs[i]),
-                            ),
-                          ),
-                          onEdit: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  PostJobScreen(jobToEdit: jobs[i]),
-                            ),
-                          ),
+                          onTap: () => context.push(
+                              AppRoutes.jobApplicants, extra: jobs[i]),
+                          onEdit: () => context.push(
+                              AppRoutes.postJob, extra: jobs[i]),
                           onToggleActive: () => jobs[i].isActive
                               ? _confirmDeactivate(context, ref, jobs[i].id)
                               : _reactivate(context, ref, jobs[i]),

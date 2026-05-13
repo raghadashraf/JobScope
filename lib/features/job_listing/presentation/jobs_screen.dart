@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_router.dart';
 import '../data/job_providers.dart';
 import '../../auth/data/auth_providers.dart';
 import 'widgets/job_card_widget.dart';
 import 'widgets/job_filter_sheet.dart';
-import 'job_detail_screen.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -251,10 +252,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   }
 
   void _openDetail(BuildContext context, job) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
-    );
+    context.push(AppRoutes.jobDetail, extra: job);
   }
 
   void _toggleBookmark(String jobId, bool isBookmarked, String? uid) {

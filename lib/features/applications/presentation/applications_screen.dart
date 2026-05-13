@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_router.dart';
 import '../../../data/models/application_model.dart';
 import '../data/application_providers.dart';
 import 'widgets/application_card_widget.dart';
-import 'application_detail_screen.dart';
 
 class ApplicationsScreen extends ConsumerStatefulWidget {
   const ApplicationsScreen({super.key});
@@ -143,11 +144,7 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen>
   }
 
   void _openDetail(BuildContext context, ApplicationModel app) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (_) => ApplicationDetailScreen(application: app)),
-    );
+    context.push(AppRoutes.applicationDetail, extra: app);
   }
 
   Widget _shimmerRow() => Padding(

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_router.dart';
 import '../../../data/models/user_model.dart';
 import '../data/auth_providers.dart';
-import '../../home/presentation/candidate_home_screen.dart';
-import '../../home/presentation/recruiter_home_screen.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   final String role;
@@ -70,15 +70,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
       );
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => user.role == UserRole.candidate
-              ? const CandidateHomeScreen()
-              : const RecruiterHomeScreen(),
-        ),
-        (route) => false,
-      );
+      if (context.mounted) {
+        context.go(user.role == UserRole.candidate
+            ? AppRoutes.candidateHome
+            : AppRoutes.recruiterHome);
+      }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       String msg = 'Signup failed';

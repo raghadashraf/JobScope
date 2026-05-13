@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_sizes.dart';
-import 'login_screen.dart';
+import '../../../core/utils/app_router.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -151,29 +152,8 @@ class _RoleCardState extends State<_RoleCard> {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(AppSizes.radiusLG),
-            onTap: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (_, _, _) => LoginScreen(role: widget.role),
-                  transitionsBuilder: (_, animation, _, child) {
-                    return SlideTransition(
-                      position:
-                          Tween<Offset>(
-                            begin: const Offset(1, 0),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeOutCubic,
-                            ),
-                          ),
-                      child: child,
-                    );
-                  },
-                ),
-              );
-            },
+            onTap: () =>
+                context.push(AppRoutes.login, extra: widget.role),
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(

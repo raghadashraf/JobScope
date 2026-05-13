@@ -6,6 +6,7 @@ import '../../../data/models/job_model.dart';
 import '../data/job_providers.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../applications/data/application_providers.dart';
+import '../../ai_features/data/ai_providers.dart';
 
 class JobDetailScreen extends ConsumerWidget {
   final JobModel job;
@@ -23,6 +24,9 @@ class JobDetailScreen extends ConsumerWidget {
 
     // Apply action state
     final applyState = ref.watch(applyNotifierProvider);
+
+    // AI match score (only shown when CV is uploaded)
+    final matchAsync = ref.watch(jobMatchScoreProvider(job.id));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -139,7 +143,16 @@ class JobDetailScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+
+                  // ── AI match score badge ─────────────────────────────────
+                  matchAsync.when(
+                    data: (score) => score == null
+                        ? const SizedBox.shrink()
+                        : _MatchBadge(score: score),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
+                  ),
 
                   // ── Already applied banner ───────────────────────────────
                   if (hasApplied) ...[
@@ -486,6 +499,70 @@ class JobDetailScreen extends ConsumerWidget {
       default:
         return type;
     }
+  }
+}
+
+// ── AI match score badge ──────────────────────────────────────────────────────
+class _MatchBadge extends StatelessWidget {
+  final int score;
+  const _MatchBadge({required this.score});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = score >= 70
+        ? AppColors.success
+        : score >= 40
+            ? AppColors.accent
+            : AppColors.error;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: color, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'AI Match Score: $score%',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                score >= 70
+                    ? 'Strong Match'
+                    : score >= 40
+                        ? 'Partial Match'
+                        : 'Low Match',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

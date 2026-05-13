@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/local_notification_service.dart';
+import '../../../data/models/application_model.dart';
+import '../../applications/data/application_providers.dart';
 import 'dashboard_screen.dart';
 import '../../job_listing/presentation/jobs_screen.dart';
 import '../../applications/presentation/applications_screen.dart';
@@ -17,6 +20,37 @@ class CandidateHomeScreen extends ConsumerStatefulWidget {
 
 class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen> {
   int _currentIndex = 0;
+  // Track last-known statuses to detect changes
+  final Map<String, String> _lastStatuses = {};
+
+  @override
+  void initState() {
+    super.initState();
+    LocalNotificationService().init();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Listen for application status changes and fire local notifications
+    ref.listen<AsyncValue<List<ApplicationModel>>>(myApplicationsProvider,
+        (_, next) {
+      next.whenData((apps) {
+        for (final app in apps) {
+          final prev = _lastStatuses[app.id];
+          final current = app.status.name;
+          if (prev != null && prev != current && current != 'pending') {
+            LocalNotificationService().showStatusChange(
+              jobTitle: app.jobTitle,
+              company: app.company,
+              newStatus: current,
+            );
+          }
+          _lastStatuses[app.id] = current;
+        }
+      });
+    });
+  }
 
   final List<Widget> _screens = const [
     DashboardScreen(),

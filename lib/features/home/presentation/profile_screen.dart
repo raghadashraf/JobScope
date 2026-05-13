@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_router.dart';
 import '../../auth/data/auth_providers.dart';
-import '../../auth/presentation/edit_profile_screen.dart';
-import '../../auth/presentation/role_selection_screen.dart';
 import '../../cv_management/data/cv_providers.dart';
-import '../../cv_management/presentation/cv_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -136,11 +135,7 @@ class ProfileScreen extends ConsumerWidget {
                     icon: Icons.person_outline_rounded,
                     iconColor: AppColors.primary,
                     title: 'Edit Profile',
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const EditProfileScreen()),
-                    ),
+                    onTap: () => context.push(AppRoutes.editProfile),
                   ),
                   const SizedBox(height: 10),
                   _menuTile(
@@ -163,11 +158,7 @@ class ProfileScreen extends ConsumerWidget {
                                     fontWeight: FontWeight.w600)),
                           )
                         : null,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const CvScreen()),
-                    ),
+                    onTap: () => context.push(AppRoutes.cv),
                   ),
                   const SizedBox(height: 10),
                   _menuTile(
@@ -292,11 +283,7 @@ class ProfileScreen extends ConsumerWidget {
               Navigator.pop(context);
               await ref.read(authRepositoryProvider).signOut();
               if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                      builder: (_) => const RoleSelectionScreen()),
-                  (_) => false,
-                );
+                context.go(AppRoutes.roleSelection);
               }
             },
             style: ElevatedButton.styleFrom(

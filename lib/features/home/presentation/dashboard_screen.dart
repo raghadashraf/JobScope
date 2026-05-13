@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_router.dart';
+import '../../../data/models/application_model.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../applications/data/application_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
-import '../../cv_management/presentation/cv_screen.dart';
+import '../../ai_features/data/ai_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -14,6 +18,11 @@ class DashboardScreen extends ConsumerWidget {
     final userAsync = ref.watch(currentUserProvider);
     final cvAsync = ref.watch(cvStreamProvider);
     final uploadState = ref.watch(cvUploadProvider);
+    final appsAsync = ref.watch(myApplicationsProvider);
+    final apps = appsAsync.value ?? const <ApplicationModel>[];
+    final appliedCount = apps.length;
+    final shortlistedCount =
+        apps.where((a) => a.status == ApplicationStatus.shortlisted).length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -116,21 +125,21 @@ class DashboardScreen extends ConsumerWidget {
                       child: _statCard(
                           icon: Icons.work_rounded,
                           label: 'Job Matches',
-                          value: '0',
+                          value: '–',
                           color: AppColors.primary)),
                   const SizedBox(width: 12),
                   Expanded(
                       child: _statCard(
                           icon: Icons.send_rounded,
                           label: 'Applied',
-                          value: '0',
+                          value: '$appliedCount',
                           color: AppColors.secondary)),
                   const SizedBox(width: 12),
                   Expanded(
                       child: _statCard(
                           icon: Icons.check_circle_rounded,
                           label: 'Shortlisted',
-                          value: '0',
+                          value: '$shortlistedCount',
                           color: AppColors.success)),
                 ],
               ),
@@ -148,7 +157,14 @@ class DashboardScreen extends ConsumerWidget {
                 iconColor: AppColors.primary,
                 title: 'Train with AI Questions',
                 subtitle: 'Practice scenario-based interviews',
-                onTap: () {},
+                onTap: () {
+                  final cv = cvAsync.value;
+                  final params = InterviewParams(
+                    jobTitle: 'Software Engineer',
+                    skills: cv?.skills ?? const [],
+                  );
+                  context.push(AppRoutes.interviewTraining, extra: params);
+                },
               ),
               const SizedBox(height: 12),
               _actionTile(
@@ -156,7 +172,7 @@ class DashboardScreen extends ConsumerWidget {
                 iconColor: AppColors.secondary,
                 title: 'Browse Jobs',
                 subtitle: 'Find your perfect match',
-                onTap: () {},
+                onTap: () => context.push(AppRoutes.jobs),
               ),
               const SizedBox(height: 12),
               _actionTile(
@@ -164,7 +180,7 @@ class DashboardScreen extends ConsumerWidget {
                 iconColor: AppColors.accent,
                 title: 'Skill Assessment',
                 subtitle: 'Test your technical skills',
-                onTap: () {},
+                onTap: () => context.push(AppRoutes.skillAssessment),
               ),
               const SizedBox(height: 20),
             ],
@@ -182,10 +198,7 @@ class DashboardScreen extends ConsumerWidget {
     required bool isUploading,
   }) {
     return GestureDetector(
-      onTap: hasCv
-          ? () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const CvScreen()))
-          : null,
+      onTap: hasCv ? () => context.push(AppRoutes.cv) : null,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -273,11 +286,7 @@ class DashboardScreen extends ConsumerWidget {
                     ? null
                     : () {
                         if (hasCv) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const CvScreen()),
-                          );
+                          context.push(AppRoutes.cv);
                         } else {
                           ref.read(cvUploadProvider.notifier).pickAndUpload();
                         }
