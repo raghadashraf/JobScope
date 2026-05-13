@@ -29,10 +29,23 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen> {
     LocalNotificationService().init();
   }
 
+  final List<Widget> _screens = const [
+    DashboardScreen(),
+    JobsScreen(),
+    ApplicationsScreen(),
+    ProfileScreen(),
+  ];
+
+  final List<_NavItem> _navItems = const [
+    _NavItem(icon: Icons.home_rounded, label: 'Home'),
+    _NavItem(icon: Icons.work_outline_rounded, label: 'Jobs'),
+    _NavItem(icon: Icons.assignment_outlined, label: 'Applications'),
+    _NavItem(icon: Icons.person_outline_rounded, label: 'Profile'),
+  ];
+
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Listen for application status changes and fire local notifications
+  Widget build(BuildContext context) {
+    // ref.listen must be called inside build in Riverpod 3.x
     ref.listen<AsyncValue<List<ApplicationModel>>>(myApplicationsProvider,
         (_, next) {
       next.whenData((apps) {
@@ -50,24 +63,7 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen> {
         }
       });
     });
-  }
 
-  final List<Widget> _screens = const [
-    DashboardScreen(),
-    JobsScreen(),
-    ApplicationsScreen(),
-    ProfileScreen(),
-  ];
-
-  final List<_NavItem> _navItems = const [
-    _NavItem(icon: Icons.home_rounded, label: 'Home'),
-    _NavItem(icon: Icons.work_outline_rounded, label: 'Jobs'),
-    _NavItem(icon: Icons.assignment_outlined, label: 'Applications'),
-    _NavItem(icon: Icons.person_outline_rounded, label: 'Profile'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: IndexedStack(index: _currentIndex, children: _screens),
