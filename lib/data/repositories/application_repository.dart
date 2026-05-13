@@ -75,20 +75,24 @@ class ApplicationRepository {
       String candidateId) {
     return _applications
         .where('candidateId', isEqualTo: candidateId)
-        .orderBy('appliedAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map(ApplicationModel.fromDoc).toList());
+        .map((snap) {
+          final apps = snap.docs.map(ApplicationModel.fromDoc).toList();
+          apps.sort((a, b) => b.appliedAt.compareTo(a.appliedAt));
+          return apps;
+        });
   }
 
   // ─── Stream: all applications for a job (recruiter) ──────────────────────
   Stream<List<ApplicationModel>> jobApplicationsStream(String jobId) {
     return _applications
         .where('jobId', isEqualTo: jobId)
-        .orderBy('appliedAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map(ApplicationModel.fromDoc).toList());
+        .map((snap) {
+          final apps = snap.docs.map(ApplicationModel.fromDoc).toList();
+          apps.sort((a, b) => b.appliedAt.compareTo(a.appliedAt));
+          return apps;
+        });
   }
 
   // ─── Update application status (recruiter action) ─────────────────────────
