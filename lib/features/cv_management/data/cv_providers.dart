@@ -56,9 +56,10 @@ class CvUploadNotifier extends Notifier<CvUploadState> {
 
     state = state.copyWith(status: CvUploadStatus.picking);
     try {
-      state = state.copyWith(
-          status: CvUploadStatus.uploading, uploadProgress: 0.3);
-      final cv = await service.pickUploadAndParse(uid: uid);
+      state = state.copyWith(status: CvUploadStatus.uploading, uploadProgress: 0.3);
+      final upload = await service.pickAndUploadFile(uid: uid);
+      state = state.copyWith(status: CvUploadStatus.parsing, uploadProgress: 0.6);
+      final cv = await service.parseAndSave(upload);
       state = CvUploadState(status: CvUploadStatus.done, result: cv);
     } on Exception catch (e) {
       final msg = e.toString().replaceFirst('Exception: ', '');
