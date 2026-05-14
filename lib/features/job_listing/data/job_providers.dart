@@ -23,6 +23,7 @@ final bookmarkedIdsProvider = StreamProvider<Set<String>>((ref) {
 class JobFilterState {
   final String searchQuery;
   final List<String> selectedSkills;
+  final List<String> selectedJobTypes;
   final String locationFilter;
   final double? minSalary;
   final double? maxSalary;
@@ -30,6 +31,7 @@ class JobFilterState {
   const JobFilterState({
     this.searchQuery = '',
     this.selectedSkills = const [],
+    this.selectedJobTypes = const [],
     this.locationFilter = '',
     this.minSalary,
     this.maxSalary,
@@ -38,13 +40,24 @@ class JobFilterState {
   bool get hasActiveFilters =>
       searchQuery.isNotEmpty ||
       selectedSkills.isNotEmpty ||
+      selectedJobTypes.isNotEmpty ||
       locationFilter.isNotEmpty ||
       minSalary != null ||
       maxSalary != null;
 
+  int get activeFilterCount {
+    int count = 0;
+    if (locationFilter.isNotEmpty) count++;
+    if (selectedSkills.isNotEmpty) count++;
+    if (selectedJobTypes.isNotEmpty) count++;
+    if (minSalary != null || maxSalary != null) count++;
+    return count;
+  }
+
   JobFilterState copyWith({
     String? searchQuery,
     List<String>? selectedSkills,
+    List<String>? selectedJobTypes,
     String? locationFilter,
     double? minSalary,
     double? maxSalary,
@@ -53,6 +66,7 @@ class JobFilterState {
       JobFilterState(
         searchQuery: searchQuery ?? this.searchQuery,
         selectedSkills: selectedSkills ?? this.selectedSkills,
+        selectedJobTypes: selectedJobTypes ?? this.selectedJobTypes,
         locationFilter: locationFilter ?? this.locationFilter,
         minSalary: clearSalary ? null : (minSalary ?? this.minSalary),
         maxSalary: clearSalary ? null : (maxSalary ?? this.maxSalary),
@@ -67,6 +81,7 @@ class JobFilterNotifier extends Notifier<JobFilterState> {
   void setSearch(String q) => state = state.copyWith(searchQuery: q);
   void setLocation(String l) => state = state.copyWith(locationFilter: l);
   void setSkills(List<String> s) => state = state.copyWith(selectedSkills: s);
+  void setJobTypes(List<String> t) => state = state.copyWith(selectedJobTypes: t);
   void setSalaryRange(double? min, double? max) =>
       state = state.copyWith(minSalary: min, maxSalary: max);
   void clearAll() => state = const JobFilterState();
@@ -106,6 +121,12 @@ final filteredJobsProvider = Provider<AsyncValue<List<JobModel>>>((ref) {
         return filter.selectedSkills
             .any((s) => jobSkills.contains(s.toLowerCase()));
       }).toList();
+    }
+
+    if (filter.selectedJobTypes.isNotEmpty) {
+      result = result
+          .where((j) => filter.selectedJobTypes.contains(j.jobType))
+          .toList();
     }
 
     if (filter.minSalary != null) {

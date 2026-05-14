@@ -17,6 +17,9 @@ class _JobFilterSheetState extends ConsumerState<JobFilterSheet> {
   RangeValues _salaryRange = const RangeValues(0, 200000);
   bool _useSalaryFilter = false;
   final List<String> _selectedSkills = [];
+  final List<String> _selectedJobTypes = [];
+
+  static const _jobTypes = ['full-time', 'part-time', 'remote', 'contract'];
 
   @override
   void initState() {
@@ -24,6 +27,7 @@ class _JobFilterSheetState extends ConsumerState<JobFilterSheet> {
     final filter = ref.read(jobFilterProvider);
     _locationCtrl.text = filter.locationFilter;
     _selectedSkills.addAll(filter.selectedSkills);
+    _selectedJobTypes.addAll(filter.selectedJobTypes);
     if (filter.minSalary != null || filter.maxSalary != null) {
       _useSalaryFilter = true;
       _salaryRange = RangeValues(
@@ -107,6 +111,56 @@ class _JobFilterSheetState extends ConsumerState<JobFilterSheet> {
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 12),
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // Job type filter
+            _sectionTitle('Job Type'),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _jobTypes.map((type) {
+                final selected = _selectedJobTypes.contains(type);
+                return GestureDetector(
+                  onTap: () => setState(() {
+                    if (selected) {
+                      _selectedJobTypes.remove(type);
+                    } else {
+                      _selectedJobTypes.add(type);
+                    }
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.border,
+                        width: selected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      _formatJobType(type),
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 20),
 
@@ -245,11 +299,27 @@ class _JobFilterSheetState extends ConsumerState<JobFilterSheet> {
     final notifier = ref.read(jobFilterProvider.notifier);
     notifier.setLocation(_locationCtrl.text.trim());
     notifier.setSkills(List.from(_selectedSkills));
+    notifier.setJobTypes(List.from(_selectedJobTypes));
     notifier.setSalaryRange(
       _useSalaryFilter ? _salaryRange.start : null,
       _useSalaryFilter ? _salaryRange.end : null,
     );
     Navigator.pop(context);
+  }
+
+  String _formatJobType(String type) {
+    switch (type) {
+      case 'full-time':
+        return 'Full-time';
+      case 'part-time':
+        return 'Part-time';
+      case 'remote':
+        return 'Remote';
+      case 'contract':
+        return 'Contract';
+      default:
+        return type;
+    }
   }
 
   Widget _sectionTitle(String title) => Text(
