@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart'; // FIXED: was '../../../core/constants/app_colors.dart'
 import '../../../../data/models/job_model.dart';      // FIXED: was '../../../data/models/job_model.dart'
+import '../../../ai_features/data/ai_providers.dart';
+import 'match_badge_widget.dart';
 
-class JobCardWidget extends StatelessWidget {
+class JobCardWidget extends ConsumerWidget {
   final JobModel job;
   final bool isBookmarked;
   final VoidCallback onTap;
@@ -18,7 +21,8 @@ class JobCardWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final matchAsync = ref.watch(jobMatchResultProvider(job.id));
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -157,6 +161,13 @@ class JobCardWidget extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
+                matchAsync.when(
+                  data: (result) => result != null
+                      ? MatchBadgeWidget(result: result)
+                      : const SizedBox.shrink(),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
