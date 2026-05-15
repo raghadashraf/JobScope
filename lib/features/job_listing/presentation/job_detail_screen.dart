@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/job_matching_service.dart';
 import '../../../data/models/job_model.dart';
 import '../data/job_providers.dart';
 import '../../auth/data/auth_providers.dart';
@@ -26,7 +27,7 @@ class JobDetailScreen extends ConsumerWidget {
     final applyState = ref.watch(applyNotifierProvider);
 
     // AI match score (only shown when CV is uploaded)
-    final matchAsync = ref.watch(jobMatchScoreProvider(job.id));
+    final matchAsync = ref.watch(jobMatchResultProvider(job.id));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -147,9 +148,9 @@ class JobDetailScreen extends ConsumerWidget {
 
                   // ── AI match score badge ─────────────────────────────────
                   matchAsync.when(
-                    data: (score) => score == null
+                    data: (result) => result == null
                         ? const SizedBox.shrink()
-                        : _MatchBadge(score: score),
+                        : _MatchBadge(result: result),
                     loading: () => const SizedBox.shrink(),
                     error: (_, _) => const SizedBox.shrink(),
                   ),
@@ -504,17 +505,37 @@ class JobDetailScreen extends ConsumerWidget {
 
 // ── AI match score badge ──────────────────────────────────────────────────────
 class _MatchBadge extends StatelessWidget {
-  final int score;
-  const _MatchBadge({required this.score});
+  final MatchResult result;
+  const _MatchBadge({required this.result});
+
+  Color _categoryColor(MatchCategory c) {
+    switch (c) {
+      case MatchCategory.excellent:
+      case MatchCategory.good:
+        return AppColors.success;
+      case MatchCategory.fair:
+        return AppColors.accent;
+      case MatchCategory.low:
+        return AppColors.error;
+    }
+  }
+
+  String _categoryLabel(MatchCategory c) {
+    switch (c) {
+      case MatchCategory.excellent:
+        return 'Excellent';
+      case MatchCategory.good:
+        return 'Good Match';
+      case MatchCategory.fair:
+        return 'Fair Match';
+      case MatchCategory.low:
+        return 'Low Match';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final color = score >= 70
-        ? AppColors.success
-        : score >= 40
-            ? AppColors.accent
-            : AppColors.error;
-
+    final color = _categoryColor(result.category);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
@@ -531,7 +552,7 @@ class _MatchBadge extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'AI Match Score: $score%',
+                'AI Match Score: ${result.score}%',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -547,11 +568,7 @@ class _MatchBadge extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                score >= 70
-                    ? 'Strong Match'
-                    : score >= 40
-                        ? 'Partial Match'
-                        : 'Low Match',
+                _categoryLabel(result.category),
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,

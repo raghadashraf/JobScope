@@ -1,10 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/ai_service.dart';
+import '../../../core/services/job_matching_service.dart';
+import '../../../data/models/job_model.dart';
 import '../../cv_management/data/cv_providers.dart';
 import '../../job_listing/data/job_providers.dart';
 
 // ─── Service provider ─────────────────────────────────────────────────────────
 final aiServiceProvider = Provider<AiService>((_) => AiService());
+
+final jobMatchingServiceProvider =
+    Provider<JobMatchingService>((_) => JobMatchingService());
 
 // ─── Interview questions params ───────────────────────────────────────────────
 class InterviewParams {
@@ -43,16 +48,34 @@ final skillQuizProvider = FutureProvider.autoDispose
         (ref, skills) =>
             ref.read(aiServiceProvider).generateSkillQuiz(skills));
 
-// ─── Job match score ──────────────────────────────────────────────────────────
-final jobMatchScoreProvider =
-    FutureProvider.autoDispose.family<int?, String>((ref, jobId) async {
+// ─── Job match (embedding similarity) ─────────────────────────────────────────
+final jobMatchResultProvider =
+    FutureProvider.autoDispose.family<MatchResult?, String>((ref, jobId) async {
   final cv = ref.watch(cvStreamProvider).value;
   if (cv == null || cv.skills.isEmpty) return null;
   final job = await ref.read(jobRepositoryProvider).fetchJob(jobId);
-  if (job == null || job.skills.isEmpty) return null;
-  return ref.read(aiServiceProvider).matchJob(
-        jobSkills: job.skills,
-        cvSkills: cv.skills,
-        jobDescription: job.description,
-      );
+  if (job == null) return null;
+  return ref.read(jobMatchingServiceProvider).calculateMatch(cv, job);
+});
+
+final matchSortedJobsProvider =
+    FutureProvider.autoDispose<List<JobModel>>((ref) async {
+  final jobsAsync = ref.watch(filteredJobsProvider);
+  final jobs = jobsAsync.value ?? [];
+  final cv = ref.watch(cvStreamProvider).value;
+  if (cv == null || cv.skills.isEmpty) return jobs;
+
+  final service = ref.read(jobMatchingServiceProvider);
+  final scored = await Future.wait(
+    jobs.map((job) async {
+      try {
+        final result = await service.calculateMatch(cv, job);
+        return (job: job, score: result.score);
+      } catch (_) {
+        return (job: job, score: 0);
+      }
+    }),
+  );
+  scored.sort((a, b) => b.score.compareTo(a.score));
+  return scored.map((e) => e.job).toList();
 });
