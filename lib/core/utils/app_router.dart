@@ -113,11 +113,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.jobDetail,
+        redirect: (_, state) =>
+            state.extra is JobModel ? null : AppRoutes.jobs,
         builder: (_, state) =>
             JobDetailScreen(job: state.extra as JobModel),
       ),
       GoRoute(
         path: AppRoutes.applicationDetail,
+        redirect: (_, state) => state.extra is ApplicationModel
+            ? null
+            : AppRoutes.candidateHome,
         builder: (_, state) => ApplicationDetailScreen(
             application: state.extra as ApplicationModel),
       ),
@@ -136,6 +141,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.jobApplicants,
+        redirect: (_, state) =>
+            state.extra is JobModel ? null : AppRoutes.recruiterHome,
         builder: (_, state) =>
             JobApplicantsScreen(job: state.extra as JobModel),
       ),
