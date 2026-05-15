@@ -42,6 +42,22 @@ class QuizQuestion {
       );
 }
 
+class MatchReason {
+  final List<String> matchedSkills;
+  final List<String> missingSkills;
+  final String summary;
+  const MatchReason({
+    required this.matchedSkills,
+    required this.missingSkills,
+    required this.summary,
+  });
+  factory MatchReason.fromMap(Map<String, dynamic> m) => MatchReason(
+        matchedSkills: List<String>.from(m['matchedSkills'] ?? []),
+        missingSkills: List<String>.from(m['missingSkills'] ?? []),
+        summary: m['summary'] as String? ?? '',
+      );
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 class AiService {
@@ -140,6 +156,32 @@ Where matchScore is 0-100 based on skill overlap and relevance.
     final cleaned = _stripMarkdown(rawText);
     final Map<String, dynamic> parsed = jsonDecode(cleaned);
     return ((parsed['matchScore'] as num?)?.toInt() ?? 0).clamp(0, 100);
+  }
+
+  Future<MatchReason> getMatchReasons({
+    required List<String> cvSkills,
+    required List<String> jobSkills,
+    required List<String> jobRequirements,
+    required String jobTitle,
+  }) async {
+    final prompt = '''
+You are a job matching expert. Analyse how well a candidate fits a role.
+
+Job title: $jobTitle
+Job requires skills: ${jobSkills.join(', ')}
+Job requirements: ${jobRequirements.join(', ')}
+Candidate skills: ${cvSkills.join(', ')}
+
+Return ONLY a valid JSON object — no markdown, no explanation:
+{
+  "matchedSkills": ["skill1", "skill2"],
+  "missingSkills": ["skill3"],
+  "summary": "One sentence explaining the overall fit."
+}
+''';
+    final raw = await _callGemini(prompt, temperature: 0.1);
+    final cleaned = _stripMarkdown(raw);
+    return MatchReason.fromMap(jsonDecode(cleaned) as Map<String, dynamic>);
   }
 
   String _buildPrompt(String cvText) {

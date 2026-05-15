@@ -79,3 +79,28 @@ final matchSortedJobsProvider =
   scored.sort((a, b) => b.score.compareTo(a.score));
   return scored.map((e) => e.job).toList();
 });
+
+class MatchReasonsParams {
+  final String jobId;
+  final List<String> cvSkills;
+  const MatchReasonsParams({required this.jobId, required this.cvSkills});
+
+  @override
+  bool operator ==(Object o) => o is MatchReasonsParams && o.jobId == jobId;
+
+  @override
+  int get hashCode => jobId.hashCode;
+}
+
+final matchReasonsProvider = FutureProvider.autoDispose
+    .family<MatchReason?, MatchReasonsParams>((ref, params) async {
+  if (params.cvSkills.isEmpty) return null;
+  final job = await ref.read(jobRepositoryProvider).fetchJob(params.jobId);
+  if (job == null) return null;
+  return ref.read(aiServiceProvider).getMatchReasons(
+        cvSkills: params.cvSkills,
+        jobSkills: job.skills,
+        jobRequirements: job.requirements,
+        jobTitle: job.title,
+      );
+});

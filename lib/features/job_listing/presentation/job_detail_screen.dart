@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/job_matching_service.dart';
 import '../../../data/models/job_model.dart';
 import '../data/job_providers.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../applications/data/application_providers.dart';
 import '../../ai_features/data/ai_providers.dart';
+import '../../cv_management/data/cv_providers.dart';
+import 'widgets/match_badge_widget.dart';
+import 'widgets/match_reasons_sheet.dart';
 
 class JobDetailScreen extends ConsumerWidget {
   final JobModel job;
@@ -15,6 +17,7 @@ class JobDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cv = ref.watch(cvStreamProvider).value;
     final bookmarkedIds = ref.watch(bookmarkedIdsProvider).value ?? {};
     final isBookmarked = bookmarkedIds.contains(job.id);
     final user = ref.watch(firebaseUserProvider).value;
@@ -146,11 +149,69 @@ class JobDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // ── AI match score badge ─────────────────────────────────
+                  // ── Match Score card ─────────────────────────────────────
                   matchAsync.when(
-                    data: (result) => result == null
-                        ? const SizedBox.shrink()
-                        : _MatchBadge(result: result),
+                    data: (result) {
+                      if (result == null) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Match Score',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              MatchBadgeWidget(result: result),
+                              const SizedBox(height: 12),
+                              GestureDetector(
+                                onTap: () {
+                                  showModalBottomSheet<void>(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (ctx) => SizedBox(
+                                      height:
+                                          MediaQuery.of(ctx).size.height *
+                                              0.92,
+                                      child: MatchReasonsSheet(
+                                        jobId: job.id,
+                                        cvSkills: cv?.skills ?? [],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'See match reasons',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                     loading: () => const SizedBox.shrink(),
                     error: (_, _) => const SizedBox.shrink(),
                   ),
@@ -500,86 +561,6 @@ class JobDetailScreen extends ConsumerWidget {
       default:
         return type;
     }
-  }
-}
-
-// ── AI match score badge ──────────────────────────────────────────────────────
-class _MatchBadge extends StatelessWidget {
-  final MatchResult result;
-  const _MatchBadge({required this.result});
-
-  Color _categoryColor(MatchCategory c) {
-    switch (c) {
-      case MatchCategory.excellent:
-      case MatchCategory.good:
-        return AppColors.success;
-      case MatchCategory.fair:
-        return AppColors.accent;
-      case MatchCategory.low:
-        return AppColors.error;
-    }
-  }
-
-  String _categoryLabel(MatchCategory c) {
-    switch (c) {
-      case MatchCategory.excellent:
-        return 'Excellent';
-      case MatchCategory.good:
-        return 'Good Match';
-      case MatchCategory.fair:
-        return 'Fair Match';
-      case MatchCategory.low:
-        return 'Low Match';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _categoryColor(result.category);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.auto_awesome_rounded, color: color, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'AI Match Score: ${result.score}%',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _categoryLabel(result.category),
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
