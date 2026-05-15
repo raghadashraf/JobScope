@@ -6,7 +6,9 @@ import 'package:shimmer/shimmer.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_router.dart';
 import '../data/job_providers.dart';
+import '../../ai_features/data/ai_providers.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../cv_management/data/cv_providers.dart';
 import 'widgets/job_card_widget.dart';
 import 'widgets/job_filter_sheet.dart';
 
@@ -37,7 +39,10 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final filteredAsync = ref.watch(filteredJobsProvider);
+    final cv = ref.watch(cvStreamProvider).value;
+    final filteredAsync = cv != null
+        ? ref.watch(matchSortedJobsProvider)
+        : ref.watch(filteredJobsProvider);
     final filter = ref.watch(jobFilterProvider);
     final bookmarkedIds = ref.watch(bookmarkedIdsProvider).value ?? {};
     final user = ref.watch(firebaseUserProvider).value;
