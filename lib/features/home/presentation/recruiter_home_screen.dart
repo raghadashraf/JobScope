@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import 'recruiter_dashboard_screen.dart';
 import 'post_job_screen.dart';
+import '../../recruiter/presentation/recruiter_analytics_screen.dart';
 import '../../recruiter/presentation/recruiter_jobs_screen.dart';
 import 'profile_screen.dart';
 
@@ -22,6 +23,7 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen> {
     RecruiterDashboardScreen(),
     PostJobScreen(),
     RecruiterJobsScreen(),
+    RecruiterAnalyticsScreen(),
     ProfileScreen(),
   ];
 
@@ -29,6 +31,7 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen> {
     _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
     _NavItem(icon: Icons.add_box_outlined, label: 'Post Job'),
     _NavItem(icon: Icons.people_outline_rounded, label: 'My Jobs'),
+    _NavItem(icon: Icons.bar_chart_rounded, label: 'Analytics'),
     _NavItem(icon: Icons.person_outline_rounded, label: 'Profile'),
   ];
 

@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../data/models/application_model.dart';
+import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../data/recruiter_providers.dart';
 
 class RecruiterAnalyticsScreen extends ConsumerWidget {
@@ -102,6 +104,85 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
             ),
           ),
         ],
+      );
+
+  String _timeAgo(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inDays == 0) return 'Today';
+    if (diff.inDays == 1) return '1d ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+    return '${(diff.inDays / 30).floor()}mo ago';
+  }
+
+  Widget _recentActivityTile(ApplicationModel app) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    app.candidateName,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'Applied to ${app.jobTitle}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    _timeAgo(app.appliedAt),
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ApplicationStatusBadge(status: app.status),
+                if (app.matchScore != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${app.matchScore}% match',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
       );
 
   @override
@@ -429,7 +510,71 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                const SizedBox(height: 24),
+                Text(
+                  'Recent Activity',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (analytics.recentActivity.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.inbox_outlined,
+                          size: 48,
+                          color: AppColors.textTertiary,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No activity yet',
+                          style: GoogleFonts.inter(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: analytics.recentActivity
+                          .asMap()
+                          .entries
+                          .map((entry) {
+                        return Column(
+                          children: [
+                            if (entry.key > 0)
+                              const Divider(
+                                height: 1,
+                                color: AppColors.divider,
+                                indent: 16,
+                                endIndent: 16,
+                              ),
+                            _recentActivityTile(entry.value),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
               ],
+              const SizedBox(height: 32),
             ],
           ),
         ),
