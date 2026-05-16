@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_router.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/models/job_model.dart';
 import '../../applications/data/application_providers.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../data/recruiter_providers.dart';
-import 'applicant_detail_screen.dart';
 
 class JobApplicantsScreen extends ConsumerWidget {
   final JobModel job;
@@ -138,24 +139,9 @@ class JobApplicantsScreen extends ConsumerWidget {
               }
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, i) => Padding(
+                  (_, i) => Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => ApplicantDetailScreen(
-                                application: apps[i],
-                              ),
-                            ),
-                          );
-                        },
-                        child: _ApplicantCard(application: apps[i]),
-                      ),
-                    ),
+                    child: _ApplicantCard(application: apps[i]),
                   ),
                   childCount: apps.length,
                 ),
@@ -259,23 +245,26 @@ class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
     final canAct = app.status == ApplicationStatus.pending ||
         app.status == ApplicationStatus.shortlisted;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.applicantDetail,
+          extra: widget.application),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // ── Header row ────────────────────────────────────────────
           Row(
             children: [
@@ -424,6 +413,7 @@ class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
           ],
         ],
       ),
+    ),
     );
   }
 

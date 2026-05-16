@@ -19,6 +19,7 @@ import '../../features/home/presentation/post_job_screen.dart';
 import '../../features/home/presentation/recruiter_home_screen.dart';
 import '../../features/job_listing/presentation/job_detail_screen.dart';
 import '../../features/job_listing/presentation/jobs_screen.dart';
+import '../../features/recruiter/presentation/applicant_detail_screen.dart';
 import '../../features/recruiter/presentation/job_applicants_screen.dart';
 
 // ─── Route paths ──────────────────────────────────────────────────────────────
@@ -34,6 +35,7 @@ class AppRoutes {
   static const cv = '/cv';
   static const postJob = '/post-job';
   static const jobApplicants = '/job-applicants';
+  static const applicantDetail = '/applicant-detail';
   static const interviewTraining = '/interview-training';
   static const skillAssessment = '/skill-assessment';
   static const jobs = '/jobs';
@@ -145,6 +147,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             state.extra is JobModel ? null : AppRoutes.recruiterHome,
         builder: (_, state) =>
             JobApplicantsScreen(job: state.extra as JobModel),
+      ),
+      GoRoute(
+        path: AppRoutes.applicantDetail,
+        redirect: (_, state) =>
+            state.extra is ApplicationModel ? null : AppRoutes.recruiterHome,
+        builder: (_, state) => ApplicantDetailScreen(
+            application: state.extra as ApplicationModel),
       ),
       GoRoute(
         path: AppRoutes.interviewTraining,
