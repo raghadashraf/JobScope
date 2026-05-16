@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/cv_parser_service.dart';
 import '../../../data/models/application_model.dart';
+import '../../../data/models/cv_model.dart';
 import '../../../data/models/job_model.dart';
+import '../../../data/models/user_model.dart';
 import '../../applications/data/application_providers.dart';
 import '../../auth/data/auth_providers.dart';
 
@@ -104,4 +107,21 @@ final recruiterStatsProvider = Provider<RecruiterStats>((ref) {
     shortlisted:
         apps.where((a) => a.status == ApplicationStatus.shortlisted).length,
   );
+});
+
+final candidateCvProvider =
+    FutureProvider.autoDispose.family<CvModel?, String>((ref, candidateId) async {
+  final service = CvParserService();
+  return service.getCv(candidateId);
+});
+
+final candidateProfileProvider =
+    FutureProvider.autoDispose.family<UserModel?, String>(
+        (ref, candidateId) async {
+  final doc = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(candidateId)
+      .get();
+  if (!doc.exists) return null;
+  return UserModel.fromMap(doc.data()!);
 });
