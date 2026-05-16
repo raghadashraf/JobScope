@@ -109,6 +109,74 @@ final recruiterStatsProvider = Provider<RecruiterStats>((ref) {
   );
 });
 
+class RecruiterAnalytics {
+  final int totalApplicants;
+  final int activeJobs;
+  final double acceptanceRate;
+  final double averageMatchScore;
+  final List<MapEntry<String, int>> topSkills;
+  final Map<String, int> statusBreakdown;
+  final List<ApplicationModel> recentActivity;
+
+  const RecruiterAnalytics({
+    required this.totalApplicants,
+    required this.activeJobs,
+    required this.acceptanceRate,
+    required this.averageMatchScore,
+    required this.topSkills,
+    required this.statusBreakdown,
+    required this.recentActivity,
+  });
+}
+
+final recruiterAnalyticsProvider = Provider<RecruiterAnalytics>((ref) {
+  final apps = ref.watch(recruiterAllApplicationsStreamProvider).value ?? [];
+  final jobs = ref.watch(recruiterJobsStreamProvider).value ?? [];
+
+  final statusBreakdown = {
+    'pending': apps.where((a) => a.status == ApplicationStatus.pending).length,
+    'shortlisted':
+        apps.where((a) => a.status == ApplicationStatus.shortlisted).length,
+    'accepted': apps.where((a) => a.status == ApplicationStatus.accepted).length,
+    'rejected': apps.where((a) => a.status == ApplicationStatus.rejected).length,
+  };
+
+  final accepted = statusBreakdown['accepted']!;
+  final acceptanceRate =
+      apps.isEmpty ? 0.0 : (accepted / apps.length) * 100;
+
+  final scored = apps.where((a) => a.matchScore != null).toList();
+  final averageMatchScore = scored.isEmpty
+      ? 0.0
+      : scored.map((a) => a.matchScore!).reduce((a, b) => a + b) /
+            scored.length;
+
+  final skillCount = <String, int>{};
+  for (final job in jobs) {
+    for (final skill in job.skills) {
+      final key = skill.toLowerCase().trim();
+      skillCount[key] = (skillCount[key] ?? 0) + 1;
+    }
+  }
+  final topSkills = skillCount.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  final top5 = topSkills.take(5).toList();
+
+  final sorted = List<ApplicationModel>.from(apps)
+    ..sort((a, b) => b.appliedAt.compareTo(a.appliedAt));
+  final recentActivity = sorted.take(8).toList();
+
+  return RecruiterAnalytics(
+    totalApplicants: apps.length,
+    activeJobs: jobs.where((j) => j.isActive).length,
+    acceptanceRate: acceptanceRate,
+    averageMatchScore: averageMatchScore,
+    topSkills: top5,
+    statusBreakdown: statusBreakdown,
+    recentActivity: recentActivity,
+  );
+});
+
 final candidateCvProvider =
     FutureProvider.autoDispose.family<CvModel?, String>((ref, candidateId) async {
   final service = CvParserService();
