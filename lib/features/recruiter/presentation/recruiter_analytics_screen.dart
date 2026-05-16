@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -65,6 +66,42 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
+      );
+
+  Widget _legendRow({
+    required Color color,
+    required String label,
+    required int count,
+  }) =>
+      Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          Text(
+            '$count',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
       );
 
   @override
@@ -148,6 +185,134 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
                       color: AppColors.success,
                     ),
                   ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Application Breakdown',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: analytics.totalApplicants == 0
+                      ? Container(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.pie_chart_outline_rounded,
+                                size: 48,
+                                color: AppColors.textTertiary,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No application data yet',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Builder(
+                          builder: (_) {
+                            final breakdown = analytics.statusBreakdown;
+                            final sections = [
+                              PieChartSectionData(
+                                color: AppColors.warning,
+                                value:
+                                    breakdown['pending']!.toDouble(),
+                                title: '',
+                                radius: 28,
+                              ),
+                              PieChartSectionData(
+                                color: AppColors.primary,
+                                value: breakdown['shortlisted']!
+                                    .toDouble(),
+                                title: '',
+                                radius: 28,
+                              ),
+                              PieChartSectionData(
+                                color: AppColors.success,
+                                value:
+                                    breakdown['accepted']!.toDouble(),
+                                title: '',
+                                radius: 28,
+                              ),
+                              PieChartSectionData(
+                                color: AppColors.error,
+                                value:
+                                    breakdown['rejected']!.toDouble(),
+                                title: '',
+                                radius: 28,
+                              ),
+                            ]
+                                .where((s) => s.value > 0)
+                                .toList();
+
+                            return Row(
+                              children: [
+                                SizedBox(
+                                  width: 160,
+                                  height: 160,
+                                  child: PieChart(
+                                    PieChartData(
+                                      sections: sections,
+                                      centerSpaceRadius: 40,
+                                      sectionsSpace: 3,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _legendRow(
+                                        color: AppColors.warning,
+                                        label: 'Under Review',
+                                        count:
+                                            breakdown['pending'] ?? 0,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _legendRow(
+                                        color: AppColors.primary,
+                                        label: 'Shortlisted',
+                                        count:
+                                            breakdown['shortlisted'] ?? 0,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _legendRow(
+                                        color: AppColors.success,
+                                        label: 'Accepted',
+                                        count:
+                                            breakdown['accepted'] ?? 0,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      _legendRow(
+                                        color: AppColors.error,
+                                        label: 'Rejected',
+                                        count:
+                                            breakdown['rejected'] ?? 0,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                 ),
               ],
             ],
