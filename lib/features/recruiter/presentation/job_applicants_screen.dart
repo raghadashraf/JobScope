@@ -8,6 +8,7 @@ import '../../../data/models/job_model.dart';
 import '../../applications/data/application_providers.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../data/recruiter_providers.dart';
+import 'applicant_detail_screen.dart';
 
 class JobApplicantsScreen extends ConsumerWidget {
   final JobModel job;
@@ -137,9 +138,24 @@ class JobApplicantsScreen extends ConsumerWidget {
               }
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (_, i) => Padding(
+                  (context, i) => Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                    child: _ApplicantCard(application: apps[i]),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => ApplicantDetailScreen(
+                                application: apps[i],
+                              ),
+                            ),
+                          );
+                        },
+                        child: _ApplicantCard(application: apps[i]),
+                      ),
+                    ),
                   ),
                   childCount: apps.length,
                 ),
