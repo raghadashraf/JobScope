@@ -15,7 +15,9 @@ class JobApplicantsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appsAsync = ref.watch(jobApplicationsStreamProvider(job.id));
+    final appsAsync = ref.watch(sortedApplicantsProvider(job.id));
+    final filter = ref.watch(applicantFilterProvider);
+    final allAppsAsync = ref.watch(jobApplicationsStreamProvider(job.id));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -63,7 +65,7 @@ class JobApplicantsScreen extends ConsumerWidget {
                         fontSize: 14, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 16),
-                  appsAsync.when(
+                  allAppsAsync.when(
                     data: (apps) {
                       final shortlisted = apps
                           .where((a) =>
@@ -81,6 +83,19 @@ class JobApplicantsScreen extends ConsumerWidget {
                     },
                     loading: () => const SizedBox.shrink(),
                     error: (_, _) => const SizedBox.shrink(),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _filterTab(
+                          'All', ApplicantFilterStatus.all, filter, ref),
+                      const SizedBox(width: 8),
+                      _filterTab('Pending', ApplicantFilterStatus.pending,
+                          filter, ref),
+                      const SizedBox(width: 8),
+                      _filterTab('Shortlisted',
+                          ApplicantFilterStatus.shortlisted, filter, ref),
+                    ],
                   ),
                 ],
               ),
@@ -100,7 +115,9 @@ class JobApplicantsScreen extends ConsumerWidget {
                             size: 64, color: AppColors.textTertiary),
                         const SizedBox(height: 16),
                         Text(
-                          'No applicants yet',
+                          filter == ApplicantFilterStatus.all
+                              ? 'No applicants yet'
+                              : 'No ${filter.name} applicants',
                           style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -158,6 +175,33 @@ class JobApplicantsScreen extends ConsumerWidget {
               fontSize: 13, fontWeight: FontWeight.w600, color: color),
         ),
       );
+
+  Widget _filterTab(String label, ApplicantFilterStatus value,
+      ApplicantFilterStatus current, WidgetRef ref) {
+    final isSelected = current == value;
+    return GestureDetector(
+      onTap: () =>
+          ref.read(applicantFilterProvider.notifier).setFilter(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ── Applicant card ────────────────────────────────────────────────────────────
