@@ -314,6 +314,121 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
                           },
                         ),
                 ),
+                const SizedBox(height: 24),
+                Text(
+                  'Top Skills Demand',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (analytics.topSkills.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Post jobs with skills to see demand',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: SizedBox(
+                      height: analytics.topSkills.length * 52.0,
+                      child: BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: analytics.topSkills.first.value
+                                  .toDouble() +
+                              1,
+                          barGroups: analytics.topSkills
+                              .asMap()
+                              .entries
+                              .map((entry) {
+                            return BarChartGroupData(
+                              x: entry.key,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: entry.value.value.toDouble(),
+                                  color: AppColors.primary,
+                                  width: 20,
+                                  borderRadius:
+                                      BorderRadius.circular(6),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                          titlesData: FlTitlesData(
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 100,
+                                getTitlesWidget: (value, meta) {
+                                  final index = value.toInt();
+                                  if (index < 0 ||
+                                      index >=
+                                          analytics.topSkills.length) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final skill =
+                                      analytics.topSkills[index].key;
+                                  final label = skill.isEmpty
+                                      ? ''
+                                      : '${skill[0].toUpperCase()}${skill.substring(1)}';
+                                  return Text(
+                                    label,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  );
+                                },
+                              ),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) => Text(
+                                  value.toInt().toString(),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: AppColors.textTertiary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          gridData: const FlGridData(show: false),
+                          borderData: FlBorderData(show: false),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ],
           ),
