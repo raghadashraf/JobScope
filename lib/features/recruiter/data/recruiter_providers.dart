@@ -5,6 +5,19 @@ import '../../../data/models/job_model.dart';
 import '../../applications/data/application_providers.dart';
 import '../../auth/data/auth_providers.dart';
 
+enum ApplicantFilterStatus { all, pending, shortlisted }
+
+class ApplicantFilterNotifier extends Notifier<ApplicantFilterStatus> {
+  @override
+  ApplicantFilterStatus build() => ApplicantFilterStatus.all;
+
+  void setFilter(ApplicantFilterStatus f) => state = f;
+}
+
+final applicantFilterProvider =
+    NotifierProvider<ApplicantFilterNotifier, ApplicantFilterStatus>(
+        ApplicantFilterNotifier.new);
+
 final recruiterJobsStreamProvider = StreamProvider<List<JobModel>>((ref) {
   final user = ref.watch(firebaseUserProvider).value;
   if (user == null) return Stream.value([]);
@@ -22,6 +35,35 @@ final recruiterJobsStreamProvider = StreamProvider<List<JobModel>>((ref) {
 final jobApplicationsStreamProvider =
     StreamProvider.family<List<ApplicationModel>, String>((ref, jobId) {
   return ref.read(applicationRepositoryProvider).jobApplicationsStream(jobId);
+});
+
+final sortedApplicantsProvider =
+    Provider.family<AsyncValue<List<ApplicationModel>>, String>((ref, jobId) {
+  final appsAsync = ref.watch(jobApplicationsStreamProvider(jobId));
+  final filter = ref.watch(applicantFilterProvider);
+
+  return appsAsync.whenData((apps) {
+    var result = List<ApplicationModel>.from(apps);
+
+    if (filter == ApplicantFilterStatus.pending) {
+      result = result
+          .where((a) => a.status == ApplicationStatus.pending)
+          .toList();
+    } else if (filter == ApplicantFilterStatus.shortlisted) {
+      result = result
+          .where((a) => a.status == ApplicationStatus.shortlisted)
+          .toList();
+    }
+
+    result.sort((a, b) {
+      if (a.matchScore == null && b.matchScore == null) return 0;
+      if (a.matchScore == null) return 1;
+      if (b.matchScore == null) return -1;
+      return b.matchScore!.compareTo(a.matchScore!);
+    });
+
+    return result;
+  });
 });
 
 final recruiterAllApplicationsStreamProvider =

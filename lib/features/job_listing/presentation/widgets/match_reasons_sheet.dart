@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../ai_features/data/ai_providers.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../ai_features/data/ai_providers.dart';
 
 class MatchReasonsSheet extends ConsumerWidget {
   final String jobId;
@@ -121,7 +121,7 @@ class MatchReasonsSheet extends ConsumerWidget {
                     );
                   },
                   loading: () => _loadingShimmer(scrollController),
-                  error: (_, __) => Center(
+                  error: (_, _) => Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
