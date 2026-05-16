@@ -54,6 +54,13 @@ class CvUploadNotifier extends Notifier<CvUploadState> {
     final user = ref.read(firebaseUserProvider).value;
     final uid = user?.uid ?? '';
 
+    if (uid.isEmpty) {
+      state = CvUploadState(
+          status: CvUploadStatus.error,
+          errorMessage: 'You must be logged in to upload a CV.');
+      return;
+    }
+
     state = state.copyWith(status: CvUploadStatus.picking);
     try {
       state = state.copyWith(status: CvUploadStatus.uploading, uploadProgress: 0.3);
@@ -62,7 +69,21 @@ class CvUploadNotifier extends Notifier<CvUploadState> {
       final cv = await service.parseAndSave(upload);
       state = CvUploadState(status: CvUploadStatus.done, result: cv);
     } on Exception catch (e) {
-      final msg = e.toString().replaceFirst('Exception: ', '');
+      final raw = e.toString();
+      final String msg;
+      if (raw.contains('unauthorized') || raw.contains('permission') || raw.contains('Permission')) {
+        msg = 'Upload failed: storage permission denied. Please contact support.';
+      } else if (raw.contains('no-bucket') || raw.contains('No storage') || raw.contains('no storage')) {
+        msg = 'Upload failed: Firebase Storage is not configured. Please contact support.';
+      } else if (raw.contains('No file selected') || raw.contains('canceled')) {
+        msg = 'No file was selected.';
+      } else if (raw.contains('Could not read')) {
+        msg = 'Could not read the file. Please try again.';
+      } else if (raw.contains('Could not extract')) {
+        msg = 'Could not extract text from file. Make sure it is not a scanned image.';
+      } else {
+        msg = raw.replaceFirst('Exception: ', '');
+      }
       state = CvUploadState(status: CvUploadStatus.error, errorMessage: msg);
     }
   }
