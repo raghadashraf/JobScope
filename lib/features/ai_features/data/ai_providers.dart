@@ -86,7 +86,7 @@ class MatchReasonsParams {
   const MatchReasonsParams({required this.jobId, required this.cvSkills});
 
   @override
-  bool operator ==(Object o) => o is MatchReasonsParams && o.jobId == jobId;
+  bool operator ==(Object other) => other is MatchReasonsParams && other.jobId == jobId;
 
   @override
   int get hashCode => jobId.hashCode;

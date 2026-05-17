@@ -86,11 +86,23 @@ class AuthRepository {
     required String name,
     required String? phone,
     required String? photoUrl,
+    String? bio,
+    String? headline,
+    String? location,
+    String? linkedinUrl,
+    String? website,
+    String? company,
   }) async {
     await _firestore.collection('users').doc(uid).update({
       'name': name,
       'phone': phone,
       'photoUrl': photoUrl,
+      'bio': bio,
+      'headline': headline,
+      'location': location,
+      'linkedinUrl': linkedinUrl,
+      'website': website,
+      'company': company,
     });
 
     await _auth.currentUser?.updateDisplayName(name);

@@ -304,7 +304,7 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
                 decoration: _cardDecoration(),
                 child: cvAsync.when(
                   loading: () => _cvShimmer(),
-                  error: (_, __) => Text(
+                  error: (_, _) => Text(
                     'Could not load CV data.',
                     style: GoogleFonts.inter(
                       fontSize: 13,

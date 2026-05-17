@@ -50,7 +50,7 @@ class JobMatchingService {
         await embed.getCachedEmbedding('job_${job.id}', buildJobText(job));
     final similarity = cosineSimilarity(cvVec, jobVec);
     final score =
-        ((similarity * 100).round()).clamp(0, 100) as int;
+        (similarity * 100).round().clamp(0, 100);
     return MatchResult(score: score, category: categorise(score));
   }
 }

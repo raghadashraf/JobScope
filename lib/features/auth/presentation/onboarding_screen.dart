@@ -47,18 +47,18 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.initState();
     _ctrl = AnimationController(vsync: this, duration: _dur);
 
-    Animation<double> _interval(double start, double end, {Curve curve = Curves.easeOut}) =>
+    Animation<double> interval(double start, double end, {Curve curve = Curves.easeOut}) =>
         CurvedAnimation(parent: _ctrl, curve: Interval(start, end, curve: curve));
 
-    _logoOpacity = Tween(begin: 0.0, end: 1.0).animate(_interval(0.0, 0.25));
+    _logoOpacity = Tween(begin: 0.0, end: 1.0).animate(interval(0.0, 0.25));
     _logoScale = Tween(begin: 0.5, end: 1.0)
         .animate(CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.35, curve: Curves.elasticOut)));
 
-    _headingOpacity = Tween(begin: 0.0, end: 1.0).animate(_interval(0.20, 0.45));
+    _headingOpacity = Tween(begin: 0.0, end: 1.0).animate(interval(0.20, 0.45));
     _headingSlide = Tween(begin: const Offset(0, 0.25), end: Offset.zero)
-        .animate(_interval(0.20, 0.45));
+        .animate(interval(0.20, 0.45));
 
-    _taglineOpacity = Tween(begin: 0.0, end: 1.0).animate(_interval(0.32, 0.55));
+    _taglineOpacity = Tween(begin: 0.0, end: 1.0).animate(interval(0.32, 0.55));
 
     final featureIntervals = [
       (0.48, 0.66),
@@ -66,16 +66,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       (0.66, 0.82),
     ];
     _featureOpacity = featureIntervals
-        .map((i) => Tween(begin: 0.0, end: 1.0).animate(_interval(i.$1, i.$2)))
+        .map((i) => Tween(begin: 0.0, end: 1.0).animate(interval(i.$1, i.$2)))
         .toList();
     _featureSlide = featureIntervals
         .map((i) => Tween(begin: const Offset(0.25, 0), end: Offset.zero)
-            .animate(_interval(i.$1, i.$2)))
+            .animate(interval(i.$1, i.$2)))
         .toList();
 
-    _buttonsOpacity = Tween(begin: 0.0, end: 1.0).animate(_interval(0.78, 1.0));
+    _buttonsOpacity = Tween(begin: 0.0, end: 1.0).animate(interval(0.78, 1.0));
     _buttonsSlide = Tween(begin: const Offset(0, 0.35), end: Offset.zero)
-        .animate(_interval(0.78, 1.0));
+        .animate(interval(0.78, 1.0));
 
     _ctrl.forward();
   }

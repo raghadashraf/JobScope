@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import 'recruiter_dashboard_screen.dart';
 import 'post_job_screen.dart';
 import '../../recruiter/presentation/recruiter_analytics_screen.dart';
 import '../../recruiter/presentation/recruiter_jobs_screen.dart';
 import 'profile_screen.dart';
+import 'widgets/app_nav_bar.dart';
 
 class RecruiterHomeScreen extends ConsumerStatefulWidget {
   const RecruiterHomeScreen({super.key});
@@ -16,8 +16,17 @@ class RecruiterHomeScreen extends ConsumerStatefulWidget {
       _RecruiterHomeScreenState();
 }
 
-class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen> {
+class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen>
+    with TickerProviderStateMixin {
   int _currentIndex = 0;
+
+  static const _navItems = [
+    NavItem(icon: Icons.dashboard_rounded, outlinedIcon: Icons.dashboard_outlined, label: 'Dashboard'),
+    NavItem(icon: Icons.add_box_rounded, outlinedIcon: Icons.add_box_outlined, label: 'Post Job'),
+    NavItem(icon: Icons.people_rounded, outlinedIcon: Icons.people_outline_rounded, label: 'My Jobs'),
+    NavItem(icon: Icons.bar_chart_rounded, outlinedIcon: Icons.bar_chart_outlined, label: 'Analytics'),
+    NavItem(icon: Icons.person_rounded, outlinedIcon: Icons.person_outline_rounded, label: 'Profile'),
+  ];
 
   final List<Widget> _screens = const [
     RecruiterDashboardScreen(),
@@ -27,87 +36,54 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen> {
     ProfileScreen(),
   ];
 
-  final List<_NavItem> _navItems = const [
-    _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard'),
-    _NavItem(icon: Icons.add_box_outlined, label: 'Post Job'),
-    _NavItem(icon: Icons.people_outline_rounded, label: 'My Jobs'),
-    _NavItem(icon: Icons.bar_chart_rounded, label: 'Analytics'),
-    _NavItem(icon: Icons.person_outline_rounded, label: 'Profile'),
-  ];
+  late final List<AnimationController> _iconCtrls;
+  late final List<Animation<double>> _iconScales;
+
+  @override
+  void initState() {
+    super.initState();
+    _iconCtrls = List.generate(
+      _navItems.length,
+      (_) => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+      ),
+    );
+    _iconScales = _iconCtrls
+        .map((c) => Tween(begin: 1.0, end: 1.25).animate(
+              CurvedAnimation(parent: c, curve: Curves.elasticOut),
+            ))
+        .toList();
+    _iconCtrls[0].forward();
+  }
+
+  @override
+  void dispose() {
+    for (final c in _iconCtrls) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onTap(int i) {
+    if (i == _currentIndex) return;
+    _iconCtrls[_currentIndex].reverse();
+    setState(() => _currentIndex = i);
+    _iconCtrls[i].forward();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(_navItems.length, (i) {
-                final item = _navItems[i];
-                final isSelected = i == _currentIndex;
-                return Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _currentIndex = i),
-                    borderRadius: BorderRadius.circular(12),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.secondary.withValues(alpha: 0.1)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(item.icon,
-                              color: isSelected
-                                  ? AppColors.secondary
-                                  : AppColors.textTertiary,
-                              size: 24),
-                          const SizedBox(height: 4),
-                          Text(item.label,
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                                color: isSelected
-                                    ? AppColors.secondary
-                                    : AppColors.textTertiary,
-                              )),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-        ),
+      bottomNavigationBar: AppNavBar(
+        items: _navItems,
+        currentIndex: _currentIndex,
+        onTap: _onTap,
+        accent: AppColors.secondary,
+        iconScales: _iconScales,
       ),
     );
   }
-}
-
-class _NavItem {
-  final IconData icon;
-  final String label;
-  const _NavItem({required this.icon, required this.label});
 }

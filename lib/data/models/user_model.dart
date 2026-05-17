@@ -9,6 +9,12 @@ class UserModel {
   final UserRole role;
   final String? photoUrl;
   final String? phone;
+  final String? bio;
+  final String? headline;
+  final String? location;
+  final String? linkedinUrl;
+  final String? website;
+  final String? company;
   final DateTime createdAt;
 
   UserModel({
@@ -18,6 +24,12 @@ class UserModel {
     required this.role,
     this.photoUrl,
     this.phone,
+    this.bio,
+    this.headline,
+    this.location,
+    this.linkedinUrl,
+    this.website,
+    this.company,
     required this.createdAt,
   });
 
@@ -28,6 +40,12 @@ class UserModel {
         'role': role.name,
         'photoUrl': photoUrl,
         'phone': phone,
+        'bio': bio,
+        'headline': headline,
+        'location': location,
+        'linkedinUrl': linkedinUrl,
+        'website': website,
+        'company': company,
         'createdAt': Timestamp.fromDate(createdAt),
       };
 
@@ -41,6 +59,12 @@ class UserModel {
         ),
         photoUrl: map['photoUrl'],
         phone: map['phone'],
+        bio: map['bio'],
+        headline: map['headline'],
+        location: map['location'],
+        linkedinUrl: map['linkedinUrl'],
+        website: map['website'],
+        company: map['company'],
         createdAt:
             (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       );
