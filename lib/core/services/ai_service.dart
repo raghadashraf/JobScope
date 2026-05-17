@@ -302,6 +302,24 @@ $cvText
     return data['candidates'][0]['content']['parts'][0]['text'] as String;
   }
 
+  // ─── Career Coach Chat ────────────────────────────────────────────────────
+  Future<String> chatWithCoach({
+    required List<Map<String, String>> history,
+    required String userMessage,
+    required String systemContext,
+  }) async {
+    final prompt = '''
+$systemContext
+
+Conversation so far:
+${history.map((m) => '${m['role'] == 'user' ? 'Candidate' : 'Coach'}: ${m['content']}').join('\n')}
+
+Candidate: $userMessage
+Coach:''';
+
+    return _callGemini(prompt, temperature: 0.7);
+  }
+
   String _stripMarkdown(String raw) {
     String s = raw.trim();
     if (s.startsWith('```')) {

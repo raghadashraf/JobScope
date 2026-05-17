@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/local_notification_service.dart';
+import '../../../core/utils/app_router.dart';
 import '../../../data/models/application_model.dart';
 import '../../applications/data/application_providers.dart';
 import 'dashboard_screen.dart';
@@ -98,12 +100,34 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
     return Scaffold(
       backgroundColor: AppColors.background,
       body: IndexedStack(index: _currentIndex, children: _screens),
+      floatingActionButton: _CoachFab(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: AppNavBar(
         items: _navItems,
         currentIndex: _currentIndex,
         onTap: _onTap,
         accent: AppColors.primary,
         iconScales: _iconScales,
+      ),
+    );
+  }
+}
+
+class _CoachFab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: () => context.push(AppRoutes.careerCoach),
+      backgroundColor: AppColors.primary,
+      elevation: 4,
+      icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
+      label: const Text(
+        'AI Coach',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

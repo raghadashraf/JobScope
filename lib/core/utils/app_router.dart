@@ -13,6 +13,7 @@ import '../../features/auth/presentation/edit_profile_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
+import '../../features/career_coach/presentation/career_coach_screen.dart';
 import '../../features/cv_management/presentation/ai_cv_builder_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/cv_management/presentation/cv_screen.dart';
@@ -43,6 +44,7 @@ class AppRoutes {
   static const skillAssessment = '/skill-assessment';
   static const jobs = '/jobs';
   static const aiCvBuilder = '/ai-cv-builder';
+  static const careerCoach = '/career-coach';
 }
 
 // ─── Auth guard notifier ──────────────────────────────────────────────────────
@@ -180,6 +182,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.aiCvBuilder,
         builder: (_, _) => const AiCvBuilderScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.careerCoach,
+        builder: (_, _) => const CareerCoachScreen(),
       ),
     ],
   );

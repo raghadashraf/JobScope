@@ -259,6 +259,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             onTap: () =>
                                 context.push(AppRoutes.skillAssessment),
                           ),
+                          const SizedBox(height: 12),
+                          _actionTile(
+                            icon: Icons.auto_awesome_rounded,
+                            iconColor: const Color(0xFF7C3AED),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
+                            ),
+                            title: 'AI Career Coach',
+                            subtitle: 'Get personalised job search advice',
+                            badge: 'New',
+                            onTap: () => context.push(AppRoutes.careerCoach),
+                          ),
                           const SizedBox(height: 24),
                         ],
                       ),
