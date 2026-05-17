@@ -1,6 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/job_model.dart';
 
+class JobPage {
+  final List<JobModel> jobs;
+  final DocumentSnapshot? lastDoc;
+  final bool hasMore;
+
+  const JobPage({
+    required this.jobs,
+    required this.lastDoc,
+    required this.hasMore,
+  });
+}
+
 class JobRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const int _pageSize = 10;
@@ -19,15 +31,37 @@ class JobRepository {
         });
   }
 
-  // ─── Paginated fetch ───────────────────────────────────────────────────────
-  Future<List<JobModel>> fetchJobs({DocumentSnapshot? lastDoc}) async {
-    final snap = await _jobs
+  // ─── Real-time stream of a specific recruiter's jobs ──────────────────────
+  Stream<List<JobModel>> recruiterJobsStream(String recruiterId) {
+    return _jobs
+        .where('recruiterId', isEqualTo: recruiterId)
+        .snapshots()
+        .map((snap) {
+          final jobs = snap.docs.map(JobModel.fromDoc).toList();
+          jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+          return jobs;
+        });
+  }
+
+  // ─── Cursor-based paginated fetch ─────────────────────────────────────────
+  Future<JobPage> fetchJobs({DocumentSnapshot? lastDoc}) async {
+    Query query = _jobs
         .where('isActive', isEqualTo: true)
-        .limit(_pageSize)
-        .get();
+        .orderBy('postedAt', descending: true)
+        .limit(_pageSize);
+
+    if (lastDoc != null) {
+      query = query.startAfterDocument(lastDoc);
+    }
+
+    final snap = await query.get();
     final jobs = snap.docs.map(JobModel.fromDoc).toList();
-    jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
-    return jobs;
+
+    return JobPage(
+      jobs: jobs,
+      lastDoc: snap.docs.isNotEmpty ? snap.docs.last : null,
+      hasMore: snap.docs.length == _pageSize,
+    );
   }
 
   // ─── Fetch single job ──────────────────────────────────────────────────────
@@ -37,12 +71,18 @@ class JobRepository {
     return JobModel.fromDoc(doc);
   }
 
-  // ─── Search by title / company ────────────────────────────────────────────
+  // ─── Real-time stream of a single job ─────────────────────────────────────
+  Stream<JobModel?> jobStream(String id) {
+    return _jobs.doc(id).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return JobModel.fromDoc(doc);
+    });
+  }
+
+  // ─── Search by title / company / location ────────────────────────────────
   Future<List<JobModel>> searchJobs(String query) async {
     final lower = query.toLowerCase();
-    final snap = await _jobs
-        .where('isActive', isEqualTo: true)
-        .get();
+    final snap = await _jobs.where('isActive', isEqualTo: true).get();
 
     final results = snap.docs
         .map(JobModel.fromDoc)
@@ -62,16 +102,14 @@ class JobRepository {
     double? minSalary,
     double? maxSalary,
   }) async {
-    final snap = await _jobs
-        .where('isActive', isEqualTo: true)
-        .get();
+    final snap = await _jobs.where('isActive', isEqualTo: true).get();
 
     final filtered = snap.docs.map(JobModel.fromDoc).where((job) {
       if (skills != null && skills.isNotEmpty) {
-        final jobSkillsLower = job.skills.map((s) => s.toLowerCase()).toList();
-        final hasSkill = skills
-            .any((s) => jobSkillsLower.contains(s.toLowerCase()));
-        if (!hasSkill) return false;
+        final jobSkillsLower = job.skills.map((s) => s.toLowerCase()).toSet();
+        if (!skills.any((s) => jobSkillsLower.contains(s.toLowerCase()))) {
+          return false;
+        }
       }
       if (location != null && location.isNotEmpty) {
         if (!job.location.toLowerCase().contains(location.toLowerCase())) {
@@ -102,9 +140,19 @@ class JobRepository {
     await _jobs.doc(job.id).update(job.toMap());
   }
 
-  // ─── Recruiter: Delete / deactivate job ───────────────────────────────────
+  // ─── Recruiter: Deactivate job (soft delete) ──────────────────────────────
   Future<void> deactivateJob(String id) async {
     await _jobs.doc(id).update({'isActive': false});
+  }
+
+  // ─── Recruiter: Re-activate job ───────────────────────────────────────────
+  Future<void> activateJob(String id) async {
+    await _jobs.doc(id).update({'isActive': true});
+  }
+
+  // ─── Recruiter: Hard-delete job ───────────────────────────────────────────
+  Future<void> deleteJob(String id) async {
+    await _jobs.doc(id).delete();
   }
 
   // ─── Bookmarks ────────────────────────────────────────────────────────────

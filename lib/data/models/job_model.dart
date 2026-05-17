@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+const _sentinel = Object();
+
 class JobModel {
   final String id;
   final String recruiterId;
@@ -9,6 +11,7 @@ class JobModel {
   final String company;
   final String location;
   final String jobType; // full-time, part-time, remote, contract
+  final String? experienceLevel; // junior, mid, senior, lead
   final String description;
   final List<String> requirements;
   final List<String> skills;
@@ -27,6 +30,7 @@ class JobModel {
     required this.company,
     required this.location,
     required this.jobType,
+    this.experienceLevel,
     required this.description,
     required this.requirements,
     required this.skills,
@@ -46,6 +50,7 @@ class JobModel {
         'company': company,
         'location': location,
         'jobType': jobType,
+        'experienceLevel': experienceLevel,
         'description': description,
         'requirements': requirements,
         'skills': skills,
@@ -66,6 +71,7 @@ class JobModel {
         company: map['company'] ?? '',
         location: map['location'] ?? '',
         jobType: map['jobType'] ?? 'full-time',
+        experienceLevel: map['experienceLevel'],
         description: map['description'] ?? '',
         requirements: List<String>.from(map['requirements'] ?? []),
         skills: List<String>.from(map['skills'] ?? []),
@@ -79,6 +85,51 @@ class JobModel {
 
   factory JobModel.fromDoc(DocumentSnapshot doc) =>
       JobModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id);
+
+  JobModel copyWith({
+    String? id,
+    String? recruiterId,
+    String? recruiterName,
+    String? recruiterPhotoUrl,
+    String? title,
+    String? company,
+    String? location,
+    String? jobType,
+    Object? experienceLevel = _sentinel,
+    String? description,
+    List<String>? requirements,
+    List<String>? skills,
+    Object? salaryMin = _sentinel,
+    Object? salaryMax = _sentinel,
+    Object? salaryCurrency = _sentinel,
+    DateTime? postedAt,
+    bool? isActive,
+  }) =>
+      JobModel(
+        id: id ?? this.id,
+        recruiterId: recruiterId ?? this.recruiterId,
+        recruiterName: recruiterName ?? this.recruiterName,
+        recruiterPhotoUrl: recruiterPhotoUrl ?? this.recruiterPhotoUrl,
+        title: title ?? this.title,
+        company: company ?? this.company,
+        location: location ?? this.location,
+        jobType: jobType ?? this.jobType,
+        experienceLevel: experienceLevel == _sentinel
+            ? this.experienceLevel
+            : experienceLevel as String?,
+        description: description ?? this.description,
+        requirements: requirements ?? this.requirements,
+        skills: skills ?? this.skills,
+        salaryMin:
+            salaryMin == _sentinel ? this.salaryMin : salaryMin as double?,
+        salaryMax:
+            salaryMax == _sentinel ? this.salaryMax : salaryMax as double?,
+        salaryCurrency: salaryCurrency == _sentinel
+            ? this.salaryCurrency
+            : salaryCurrency as String?,
+        postedAt: postedAt ?? this.postedAt,
+        isActive: isActive ?? this.isActive,
+      );
 
   String get salaryRange {
     if (salaryMin == null && salaryMax == null) return 'Not specified';

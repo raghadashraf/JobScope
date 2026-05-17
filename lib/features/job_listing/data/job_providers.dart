@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/job_model.dart';
 import '../../../data/repositories/job_repository.dart';
@@ -173,3 +174,89 @@ class BookmarkNotifier extends Notifier<bool> {
 // FIXED: NotifierProvider instead of StateNotifierProvider
 final bookmarkNotifierProvider =
     NotifierProvider<BookmarkNotifier, bool>(BookmarkNotifier.new);
+
+// ─── Single job real-time stream ──────────────────────────────────────────────
+final singleJobProvider =
+    StreamProvider.autoDispose.family<JobModel?, String>((ref, jobId) {
+  return ref.read(jobRepositoryProvider).jobStream(jobId);
+});
+
+// ─── Paginated jobs state ─────────────────────────────────────────────────────
+class PaginatedJobsState {
+  final List<JobModel> jobs;
+  final DocumentSnapshot? lastDoc;
+  final bool isLoading;
+  final bool hasMore;
+  final String? error;
+
+  const PaginatedJobsState({
+    this.jobs = const [],
+    this.lastDoc,
+    this.isLoading = false,
+    this.hasMore = true,
+    this.error,
+  });
+
+  PaginatedJobsState copyWith({
+    List<JobModel>? jobs,
+    DocumentSnapshot? lastDoc,
+    bool? isLoading,
+    bool? hasMore,
+    String? error,
+    bool clearError = false,
+  }) =>
+      PaginatedJobsState(
+        jobs: jobs ?? this.jobs,
+        lastDoc: lastDoc ?? this.lastDoc,
+        isLoading: isLoading ?? this.isLoading,
+        hasMore: hasMore ?? this.hasMore,
+        error: clearError ? null : (error ?? this.error),
+      );
+}
+
+class PaginatedJobsNotifier extends Notifier<PaginatedJobsState> {
+  @override
+  PaginatedJobsState build() {
+    loadFirstPage();
+    return const PaginatedJobsState(isLoading: true);
+  }
+
+  Future<void> loadFirstPage() async {
+    state = const PaginatedJobsState(isLoading: true);
+    try {
+      final page = await ref.read(jobRepositoryProvider).fetchJobs();
+      state = PaginatedJobsState(
+        jobs: page.jobs,
+        lastDoc: page.lastDoc,
+        hasMore: page.hasMore,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = PaginatedJobsState(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (state.isLoading || !state.hasMore) return;
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final page = await ref
+          .read(jobRepositoryProvider)
+          .fetchJobs(lastDoc: state.lastDoc);
+      state = state.copyWith(
+        jobs: [...state.jobs, ...page.jobs],
+        lastDoc: page.lastDoc,
+        hasMore: page.hasMore,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  void refresh() => loadFirstPage();
+}
+
+final paginatedJobsProvider =
+    NotifierProvider<PaginatedJobsNotifier, PaginatedJobsState>(
+        PaginatedJobsNotifier.new);

@@ -7,6 +7,7 @@ import '../../../data/models/job_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../applications/data/application_providers.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../job_listing/data/job_providers.dart';
 
 enum ApplicantFilterStatus { all, pending, shortlisted }
 
@@ -24,15 +25,7 @@ final applicantFilterProvider =
 final recruiterJobsStreamProvider = StreamProvider<List<JobModel>>((ref) {
   final user = ref.watch(firebaseUserProvider).value;
   if (user == null) return Stream.value([]);
-  return FirebaseFirestore.instance
-      .collection('jobs')
-      .where('recruiterId', isEqualTo: user.uid)
-      .snapshots()
-      .map((snap) {
-        final jobs = snap.docs.map(JobModel.fromDoc).toList();
-        jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
-        return jobs;
-      });
+  return ref.read(jobRepositoryProvider).recruiterJobsStream(user.uid);
 });
 
 final jobApplicationsStreamProvider =

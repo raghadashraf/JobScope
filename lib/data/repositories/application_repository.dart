@@ -18,9 +18,7 @@ class ApplicationRepository {
     String? candidatePhotoUrl,
     String? cvUrl,
   }) async {
-    // Check for duplicate first
-    final existing = await hasApplied(
-        jobId: jobId, candidateId: candidateId);
+    final existing = await hasApplied(jobId: jobId, candidateId: candidateId);
     if (existing) {
       throw Exception('You have already applied to this job.');
     }
@@ -83,7 +81,7 @@ class ApplicationRepository {
         });
   }
 
-  // ─── Stream: all applications for a job (recruiter) ──────────────────────
+  // ─── Stream: all applications for a job (recruiter view) ─────────────────
   Stream<List<ApplicationModel>> jobApplicationsStream(String jobId) {
     return _applications
         .where('jobId', isEqualTo: jobId)
@@ -95,6 +93,14 @@ class ApplicationRepository {
         });
   }
 
+  // ─── Stream: live application count for a job ─────────────────────────────
+  Stream<int> applicationsCountStream(String jobId) {
+    return _applications
+        .where('jobId', isEqualTo: jobId)
+        .snapshots()
+        .map((snap) => snap.docs.length);
+  }
+
   // ─── Update application status (recruiter action) ─────────────────────────
   Future<void> updateStatus({
     required String applicationId,
@@ -102,6 +108,18 @@ class ApplicationRepository {
   }) async {
     await _applications.doc(applicationId).update({
       'status': status.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // ─── Update recruiter notes on an application ─────────────────────────────
+  Future<void> updateNotes({
+    required String applicationId,
+    required String notes,
+  }) async {
+    await _applications.doc(applicationId).update({
+      'notes': notes,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
