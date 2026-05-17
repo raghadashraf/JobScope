@@ -49,53 +49,79 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    final cred = await _auth
-        .signInWithEmailAndPassword(
-          email: email.trim(),
-          password: password,
-        )
-        .timeout(
-          const Duration(seconds: 15),
-          onTimeout: () => throw FirebaseAuthException(
-            code: 'network-request-failed',
-            message: 'Sign in timed out. Check your connection and try again.',
-          ),
-        );
+    final cred = await _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
 
-    final doc = await _firestore
-        .collection('users')
-        .doc(cred.user!.uid)
-        .get()
-        .timeout(
-          const Duration(seconds: 10),
-          onTimeout: () => throw FirebaseAuthException(
-            code: 'network-request-failed',
-            message: 'Could not reach the server. Check your connection.',
-          ),
-        );
+    final uid = cred.user!.uid;
 
-    if (!doc.exists) {
-      // Auth account exists but Firestore profile is missing — rebuild it.
-      final user = UserModel(
-        uid: cred.user!.uid,
-        email: email.trim(),
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      if (doc.exists) return UserModel.fromMap(doc.data()!);
+
+      // Firestore doc missing — create it from Auth data and return.
+      final fallback = UserModel(
+        uid: uid,
+        email: cred.user!.email ?? email.trim(),
         name: cred.user!.displayName ?? email.split('@').first,
         role: UserRole.candidate,
         createdAt: DateTime.now(),
       );
-      await _firestore.collection('users').doc(user.uid).set(user.toMap());
-      return user;
+      await _firestore.collection('users').doc(uid).set(fallback.toMap());
+      return fallback;
+    } catch (_) {
+      // Firestore unreachable — build a minimal user from Auth data so login
+      // still succeeds; the full profile will load once connectivity returns.
+      return UserModel(
+        uid: uid,
+        email: cred.user!.email ?? email.trim(),
+        name: cred.user!.displayName ?? email.split('@').first,
+        role: UserRole.candidate,
+        createdAt: DateTime.now(),
+      );
     }
-
-    return UserModel.fromMap(doc.data()!);
   }
 
   Future<UserModel?> getCurrentUserData() async {
     final user = _auth.currentUser;
     if (user == null) return null;
-    final doc = await _firestore.collection('users').doc(user.uid).get();
-    if (!doc.exists) return null;
-    return UserModel.fromMap(doc.data()!);
+
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      if (doc.exists) return UserModel.fromMap(doc.data()!);
+
+      // Firestore doc missing but user IS authenticated — create & return fallback.
+      final fallback = UserModel(
+        uid: user.uid,
+        email: user.email ?? '',
+        name: user.displayName ?? user.email?.split('@').first ?? 'User',
+        role: UserRole.candidate,
+        createdAt: DateTime.now(),
+      );
+      _firestore.collection('users').doc(user.uid).set(fallback.toMap());
+      return fallback;
+    } catch (_) {
+      // Firestore unreachable — return minimal user so the router doesn't
+      // redirect an authenticated user back to onboarding.
+      return UserModel(
+        uid: user.uid,
+        email: user.email ?? '',
+        name: user.displayName ?? user.email?.split('@').first ?? 'User',
+        role: UserRole.candidate,
+        createdAt: DateTime.now(),
+      );
+    }
   }
 
   Future<void> sendPasswordResetEmail(String email) async {

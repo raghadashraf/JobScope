@@ -90,15 +90,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       final msg = switch (e.code) {
-        'user-not-found' => 'No account found with this email',
-        'wrong-password' || 'invalid-credential' =>
-          'Incorrect email or password',
-        'invalid-email' => 'Invalid email format',
-        _ => 'Sign in failed. Please try again.',
+        'user-not-found'                          => 'No account found with this email',
+        'wrong-password'                          => 'Incorrect password',
+        'invalid-credential' ||
+        'INVALID_LOGIN_CREDENTIALS'               => 'Incorrect email or password',
+        'invalid-email'                           => 'Invalid email format',
+        'network-request-failed'                  => 'Connection failed. Check your internet.',
+        'too-many-requests'                       => 'Too many attempts. Please wait and try again.',
+        'user-disabled'                           => 'This account has been disabled.',
+        'channel-error'                           => 'Connection error. Check your internet and try again.',
+        'operation-not-allowed'                   => 'Email/password sign-in is not enabled.',
+        _                                         => 'Sign in failed: ${e.message ?? e.code}',
       };
       _showError(msg);
     } catch (e) {
-      if (mounted) _showError('Something went wrong. Please try again.');
+      if (mounted) _showError('Error: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
