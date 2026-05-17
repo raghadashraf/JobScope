@@ -173,19 +173,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                             ),
                             const Spacer(),
 
-                            // App icon
+                            // App logo
                             Container(
-                              width: 52,
-                              height: 52,
+                              width: 60,
+                              height: 60,
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.18),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                    color:
-                                        Colors.white.withValues(alpha: 0.3)),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.18),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
                               ),
-                              child: const Icon(Icons.work_rounded,
-                                  color: Colors.white, size: 24),
+                              padding: const EdgeInsets.all(8),
+                              child: Image.asset('assets/images/logo.png',
+                                  fit: BoxFit.contain),
                             ),
                             const SizedBox(height: 12),
 
