@@ -15,7 +15,7 @@ const _kIndigo = Color(0xFF4F46E5);
 const _kGradient = LinearGradient(colors: [_kPurple, _kIndigo]);
 const _kApiKey = 'AIzaSyBYfVm5yXmz_x2vU6WZCFZR-H30_9lKxr4';
 const _kGeminiUrl =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 // ── Data classes ──────────────────────────────────────────────────────────────
 class _Exp {

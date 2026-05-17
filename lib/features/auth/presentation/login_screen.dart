@@ -307,38 +307,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 isLoading: _isLoading,
                                 onTap: _handleLogin,
                               ),
-                              const SizedBox(height: 28),
-                              _orDivider(),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 32),
                               Center(
-                                child: Text(
-                                  "Don't have an account?",
-                                  style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      color: AppColors.textSecondary),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                height: 52,
-                                width: double.infinity,
-                                child: OutlinedButton(
+                                child: TextButton(
                                   onPressed: () => context.push(
                                       AppRoutes.register, extra: widget.role),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(
-                                        color: _roleColor, width: 1.5),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(16)),
-                                    foregroundColor: _roleColor,
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
-                                  child: Text('Create Account',
+                                  child: Text.rich(TextSpan(children: [
+                                    TextSpan(
+                                      text: "New here?  ",
+                                      style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          color: AppColors.textSecondary),
+                                    ),
+                                    TextSpan(
+                                      text: 'Create an account',
                                       style: GoogleFonts.inter(
                                         fontSize: 14,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w700,
                                         color: _roleColor,
-                                      )),
+                                      ),
+                                    ),
+                                  ])),
                                 ),
                               ),
                             ],
@@ -418,16 +412,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
-  Widget _orDivider() => Row(
-        children: [
-          Expanded(child: Divider(color: AppColors.border, thickness: 1)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text('or',
-                style: GoogleFonts.inter(
-                    fontSize: 13, color: AppColors.textTertiary)),
-          ),
-          Expanded(child: Divider(color: AppColors.border, thickness: 1)),
-        ],
-      );
 }

@@ -1,7 +1,5 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../../core/constants/app_colors.dart';
 
 // ── Decorative gradient hero background ───────────────────────────────────────
 class AuthHeroBg extends StatelessWidget {
@@ -15,42 +13,68 @@ class AuthHeroBg extends StatelessWidget {
       decoration: BoxDecoration(gradient: gradient),
       child: Stack(
         children: [
+          // Large glow top-right
           Positioned(
-            top: -60,
-            right: -60,
+            top: -40,
+            right: -50,
             child: Container(
-              width: 220,
-              height: 220,
+              width: 240,
+              height: 240,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.06),
+                color: Colors.white.withValues(alpha: 0.10),
               ),
             ),
           ),
+          // Medium glow bottom-left
           Positioned(
-            bottom: 20,
+            bottom: -20,
             left: -40,
             child: Container(
-              width: 150,
-              height: 150,
+              width: 180,
+              height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
+                color: Colors.white.withValues(alpha: 0.08),
               ),
             ),
           ),
+          // Small accent circle mid-left
           Positioned(
-            top: 40,
-            left: 20,
-            child: CustomPaint(
-              size: const Size(80, 80),
-              painter: AuthArcPainter(color: Colors.white.withValues(alpha: 0.1)),
+            top: 90,
+            left: 30,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
             ),
           ),
+          // Diagonal stripe pattern
           Positioned.fill(
             child: CustomPaint(
-              painter: AuthDotGridPainter(
-                  color: Colors.white.withValues(alpha: 0.04)),
+              painter: _DiagonalStripePainter(
+                  color: Colors.white.withValues(alpha: 0.045)),
+            ),
+          ),
+          // Ring outline top-right
+          Positioned(
+            top: 30,
+            right: 30,
+            child: CustomPaint(
+              size: const Size(100, 100),
+              painter: _RingPainter(color: Colors.white.withValues(alpha: 0.12)),
+            ),
+          ),
+          // Ring outline bottom-left
+          Positioned(
+            bottom: 40,
+            left: -20,
+            child: CustomPaint(
+              size: const Size(70, 70),
+              painter: _RingPainter(color: Colors.white.withValues(alpha: 0.09)),
             ),
           ),
         ],
@@ -59,41 +83,40 @@ class AuthHeroBg extends StatelessWidget {
   }
 }
 
-class AuthArcPainter extends CustomPainter {
+class _RingPainter extends CustomPainter {
   final Color color;
-  const AuthArcPainter({required this.color});
+  const _RingPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawArc(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      0,
-      math.pi,
-      false,
-      paint,
-    );
+      ..strokeWidth = 1.8;
+    canvas.drawCircle(
+        Offset(size.width / 2, size.height / 2), size.width / 2, paint);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class AuthDotGridPainter extends CustomPainter {
+class _DiagonalStripePainter extends CustomPainter {
   final Color color;
-  const AuthDotGridPainter({required this.color});
+  const _DiagonalStripePainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    const spacing = 28.0;
-    for (double x = spacing; x < size.width; x += spacing) {
-      for (double y = spacing; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.5, paint);
-      }
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.0;
+    const gap = 32.0;
+    for (double i = -size.height; i < size.width + size.height; i += gap) {
+      canvas.drawLine(
+        Offset(i, 0),
+        Offset(i + size.height, size.height),
+        paint,
+      );
     }
   }
 
@@ -125,18 +148,15 @@ class AuthPrimaryButton extends StatelessWidget {
       width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: isLoading ? null : gradient,
-          color: isLoading ? AppColors.border : null,
+          gradient: gradient,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: isLoading
-              ? []
-              : [
-                  BoxShadow(
-                    color: roleColor.withValues(alpha: 0.35),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+          boxShadow: [
+            BoxShadow(
+              color: roleColor.withValues(alpha: isLoading ? 0.20 : 0.38),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: TextButton(
           onPressed: isLoading ? null : onTap,

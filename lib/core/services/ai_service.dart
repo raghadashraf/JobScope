@@ -63,7 +63,7 @@ class MatchReason {
 class AiService {
   static const String _apiKey = 'AIzaSyBYfVm5yXmz_x2vU6WZCFZR-H30_9lKxr4';
   static const String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
   // ─── CV Parsing ───────────────────────────────────────────────────────────
   Future<CvModel> parseCv({
