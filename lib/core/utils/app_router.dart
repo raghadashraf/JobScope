@@ -11,6 +11,7 @@ import '../../features/applications/presentation/application_detail_screen.dart'
 import '../../features/auth/data/auth_providers.dart';
 import '../../features/auth/presentation/edit_profile_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/cv_management/presentation/cv_screen.dart';
@@ -24,6 +25,7 @@ import '../../features/recruiter/presentation/job_applicants_screen.dart';
 
 // ─── Route paths ──────────────────────────────────────────────────────────────
 class AppRoutes {
+  static const onboarding = '/onboarding';
   static const roleSelection = '/role-selection';
   static const login = '/login';
   static const register = '/register';
@@ -60,12 +62,13 @@ class _RouterNotifier extends ChangeNotifier {
     final loc = state.matchedLocation;
 
     final isPublic = loc == '/' ||
+        loc.startsWith(AppRoutes.onboarding) ||
         loc.startsWith(AppRoutes.roleSelection) ||
         loc.startsWith(AppRoutes.login) ||
         loc.startsWith(AppRoutes.register);
 
     if (user == null) {
-      return isPublic ? null : AppRoutes.roleSelection;
+      return isPublic ? null : AppRoutes.onboarding;
     }
 
     // Logged in — redirect away from public/root routes
@@ -83,13 +86,17 @@ class _RouterNotifier extends ChangeNotifier {
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier(ref);
   return GoRouter(
-    initialLocation: AppRoutes.roleSelection,
+    initialLocation: AppRoutes.onboarding,
     refreshListenable: notifier,
     redirect: notifier.redirect,
     routes: [
       GoRoute(
         path: '/',
-        redirect: (_, _) => AppRoutes.roleSelection,
+        redirect: (_, _) => AppRoutes.onboarding,
+      ),
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (_, _) => const OnboardingScreen(),
       ),
       GoRoute(
         path: AppRoutes.roleSelection,
