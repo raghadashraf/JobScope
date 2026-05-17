@@ -5,6 +5,42 @@ import '../../../core/constants/app_colors.dart';
 import '../data/cv_providers.dart';
 import '../../../data/models/cv_model.dart';
 
+Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text('Delete CV?',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+      content: Text(
+        'This will permanently remove your CV and all parsed data. You can upload a new one at any time.',
+        style: GoogleFonts.inter(fontSize: 14, height: 1.5),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text('Cancel',
+              style: GoogleFonts.inter(color: AppColors.textSecondary)),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.error,
+            foregroundColor: Colors.white,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            elevation: 0,
+          ),
+          child: Text('Delete', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true) {
+    ref.read(cvUploadProvider.notifier).deleteCv();
+  }
+}
+
 class CvScreen extends ConsumerWidget {
   const CvScreen({super.key});
 
@@ -31,7 +67,15 @@ class CvScreen extends ConsumerWidget {
             // ── Upload status messages ────────────────────────────────────
             if (uploadState.status == CvUploadStatus.uploading ||
                 uploadState.status == CvUploadStatus.parsing)
-              _UploadProgressCard(status: uploadState.status),
+              _UploadProgressCard(
+                status: uploadState.status,
+                progress: uploadState.uploadProgress,
+              ),
+            if (uploadState.status == CvUploadStatus.deleting)
+              _UploadProgressCard(
+                status: uploadState.status,
+                progress: null,
+              ),
 
             if (uploadState.status == CvUploadStatus.error)
               _ErrorCard(
@@ -61,6 +105,7 @@ class CvScreen extends ConsumerWidget {
                       cv: cv,
                       onReplace: () =>
                           ref.read(cvUploadProvider.notifier).pickAndUpload(),
+                      onDelete: () => _confirmDelete(context, ref),
                       isLoading:
                           uploadState.status != CvUploadStatus.idle &&
                               uploadState.status != CvUploadStatus.error &&
@@ -135,10 +180,15 @@ class _EmptyState extends StatelessWidget {
 class _CvContent extends StatelessWidget {
   final CvModel cv;
   final VoidCallback onReplace;
+  final VoidCallback onDelete;
   final bool isLoading;
 
-  const _CvContent(
-      {required this.cv, required this.onReplace, required this.isLoading});
+  const _CvContent({
+    required this.cv,
+    required this.onReplace,
+    required this.onDelete,
+    required this.isLoading,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -187,11 +237,30 @@ class _CvContent extends StatelessWidget {
                   ],
                 ),
               ),
-              _UploadButton(
-                  onTap: onReplace,
-                  isLoading: isLoading,
-                  isCompact: true,
-                  label: 'Replace'),
+              if (!isLoading) ...[
+                _UploadButton(
+                    onTap: onReplace,
+                    isLoading: false,
+                    isCompact: true,
+                    label: 'Replace'),
+                const SizedBox(width: 6),
+                IconButton(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline_rounded,
+                      color: AppColors.error, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.error.withValues(alpha: 0.08),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.all(8),
+                  ),
+                  tooltip: 'Delete CV',
+                ),
+              ] else
+                const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
             ],
           ),
         ),
@@ -525,16 +594,25 @@ class _UploadButton extends StatelessWidget {
   }
 }
 
-// ── Upload progress card ──────────────────────────────────────────────────────
+// ── Upload / delete progress card ─────────────────────────────────────────────
 class _UploadProgressCard extends StatelessWidget {
   final CvUploadStatus status;
-  const _UploadProgressCard({required this.status});
+  final double? progress; // null → indeterminate
+
+  const _UploadProgressCard({required this.status, required this.progress});
 
   @override
   Widget build(BuildContext context) {
-    final msg = status == CvUploadStatus.uploading
-        ? 'Uploading your CV...'
-        : 'AI is parsing your CV...';
+    final String msg;
+    if (status == CvUploadStatus.uploading) {
+      final pct = progress != null ? ' (${(progress! * 100).toInt()}%)' : '';
+      msg = 'Uploading your CV$pct...';
+    } else if (status == CvUploadStatus.parsing) {
+      msg = 'AI is parsing your CV...';
+    } else {
+      msg = 'Deleting your CV...';
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -543,18 +621,37 @@ class _UploadProgressCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: AppColors.primary)),
-          const SizedBox(width: 14),
-          Text(msg,
-              style: GoogleFonts.inter(
-                  fontSize: 14, color: AppColors.primary,
-                  fontWeight: FontWeight.w500)),
+          Row(
+            children: [
+              const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: AppColors.primary)),
+              const SizedBox(width: 14),
+              Text(msg,
+                  style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+          if (status == CvUploadStatus.uploading && progress != null) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                minHeight: 4,
+              ),
+            ),
+          ],
         ],
       ),
     );

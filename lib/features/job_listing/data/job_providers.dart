@@ -175,6 +175,21 @@ class BookmarkNotifier extends Notifier<bool> {
 final bookmarkNotifierProvider =
     NotifierProvider<BookmarkNotifier, bool>(BookmarkNotifier.new);
 
+// ─── Saved jobs (reactive to bookmark changes) ────────────────────────────────
+// Re-fetches the full JobModel list whenever the bookmarked IDs stream emits.
+final savedJobsProvider = FutureProvider<List<JobModel>>((ref) async {
+  final user = ref.watch(firebaseUserProvider).value;
+  if (user == null) return [];
+  // Watching the IDs stream means this provider re-runs whenever bookmarks change.
+  final ids = ref.watch(bookmarkedIdsProvider).value ?? {};
+  if (ids.isEmpty) return [];
+  final results = await Future.wait(
+    ids.map((id) => ref.read(jobRepositoryProvider).fetchJob(id)),
+  );
+  return results.whereType<JobModel>().toList()
+    ..sort((a, b) => b.postedAt.compareTo(a.postedAt));
+});
+
 // ─── Single job real-time stream ──────────────────────────────────────────────
 final singleJobProvider =
     StreamProvider.autoDispose.family<JobModel?, String>((ref, jobId) {

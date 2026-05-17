@@ -14,8 +14,8 @@ final cvStreamProvider = StreamProvider<CvModel?>((ref) {
   return ref.read(cvParserServiceProvider).cvStream(user.uid);
 });
 
-// ─── State: upload progress / status ─────────────────────────────────────────
-enum CvUploadStatus { idle, picking, uploading, parsing, done, error }
+// ─── State: upload / delete progress & status ────────────────────────────────
+enum CvUploadStatus { idle, picking, uploading, parsing, deleting, done, error }
 
 class CvUploadState {
   final CvUploadStatus status;
@@ -44,7 +44,6 @@ class CvUploadState {
       );
 }
 
-// FIXED: Riverpod 3.x uses Notifier instead of StateNotifier
 class CvUploadNotifier extends Notifier<CvUploadState> {
   @override
   CvUploadState build() => const CvUploadState();
@@ -55,32 +54,50 @@ class CvUploadNotifier extends Notifier<CvUploadState> {
     final uid = user?.uid ?? '';
 
     if (uid.isEmpty) {
-      state = CvUploadState(
+      state = const CvUploadState(
           status: CvUploadStatus.error,
           errorMessage: 'You must be logged in to upload a CV.');
       return;
     }
 
-    state = state.copyWith(status: CvUploadStatus.picking);
+    state = state.copyWith(status: CvUploadStatus.picking, uploadProgress: 0);
     try {
-      state = state.copyWith(status: CvUploadStatus.uploading, uploadProgress: 0.3);
-      final upload = await service.pickAndUploadFile(uid: uid);
-      state = state.copyWith(status: CvUploadStatus.parsing, uploadProgress: 0.6);
+      state = state.copyWith(status: CvUploadStatus.uploading, uploadProgress: 0);
+
+      final upload = await service.pickAndUploadFile(
+        uid: uid,
+        onUploadProgress: (p) {
+          // Clamp to 0.95 so the bar doesn't reach 100% before parsing starts.
+          state = state.copyWith(uploadProgress: p.clamp(0.0, 0.95));
+        },
+      );
+
+      state = state.copyWith(status: CvUploadStatus.parsing, uploadProgress: 1.0);
       final cv = await service.parseAndSave(upload);
       state = CvUploadState(status: CvUploadStatus.done, result: cv);
     } on Exception catch (e) {
       final raw = e.toString();
       final String msg;
-      if (raw.contains('unauthorized') || raw.contains('permission') || raw.contains('Permission')) {
-        msg = 'Upload failed: storage permission denied. Please contact support.';
-      } else if (raw.contains('no-bucket') || raw.contains('No storage') || raw.contains('no storage')) {
-        msg = 'Upload failed: Firebase Storage is not configured. Please contact support.';
-      } else if (raw.contains('No file selected') || raw.contains('canceled')) {
+      if (raw.contains('unauthorized') ||
+          raw.contains('permission') ||
+          raw.contains('Permission')) {
+        msg =
+            'Upload failed: storage permission denied. Please contact support.';
+      } else if (raw.contains('no-bucket') ||
+          raw.contains('No storage') ||
+          raw.contains('no storage')) {
+        msg =
+            'Upload failed: Firebase Storage is not configured. Please contact support.';
+      } else if (raw.contains('No file selected') ||
+          raw.contains('canceled')) {
         msg = 'No file was selected.';
+      } else if (raw.contains('too large')) {
+        msg = raw.replaceFirst('Exception: ', '');
       } else if (raw.contains('Could not read')) {
         msg = 'Could not read the file. Please try again.';
       } else if (raw.contains('Could not extract')) {
-        msg = 'Could not extract text from file. Make sure it is not a scanned image.';
+        msg =
+            'Could not extract text from file. Make sure it is not a scanned image.';
       } else {
         msg = raw.replaceFirst('Exception: ', '');
       }
@@ -88,9 +105,27 @@ class CvUploadNotifier extends Notifier<CvUploadState> {
     }
   }
 
+  Future<void> deleteCv() async {
+    final service = ref.read(cvParserServiceProvider);
+    final user = ref.read(firebaseUserProvider).value;
+    final uid = user?.uid ?? '';
+
+    if (uid.isEmpty) return;
+
+    state = state.copyWith(status: CvUploadStatus.deleting);
+    try {
+      await service.deleteCv(uid);
+      state = const CvUploadState(status: CvUploadStatus.idle);
+    } on Exception catch (e) {
+      state = CvUploadState(
+        status: CvUploadStatus.error,
+        errorMessage: 'Failed to delete CV: ${e.toString().replaceFirst('Exception: ', '')}',
+      );
+    }
+  }
+
   void reset() => state = const CvUploadState();
 }
 
-// FIXED: NotifierProvider instead of StateNotifierProvider
 final cvUploadProvider =
     NotifierProvider<CvUploadNotifier, CvUploadState>(CvUploadNotifier.new);

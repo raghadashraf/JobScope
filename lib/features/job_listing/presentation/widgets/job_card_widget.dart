@@ -168,21 +168,21 @@ class JobCardWidget extends ConsumerWidget {
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Apply Now',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View Details',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 2),
+                    const Icon(Icons.arrow_forward_ios_rounded,
+                        size: 10, color: AppColors.primary),
+                  ],
                 ),
               ],
             ),

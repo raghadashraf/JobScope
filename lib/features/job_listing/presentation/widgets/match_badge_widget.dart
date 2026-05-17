@@ -46,9 +46,9 @@ class MatchBadgeWidget extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(
-        '✦ ${result.score}% · ${_label(result.category)}',
+        '★ ${result.score}% · ${_label(result.category)}',
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: FontWeight.w600,
           color: color,
         ),

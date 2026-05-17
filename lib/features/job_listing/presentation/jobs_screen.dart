@@ -449,17 +449,31 @@ class _SavedJobsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (uid == null) {
       return Center(
-          child: Text('Sign in to see saved jobs',
-              style: GoogleFonts.inter(color: AppColors.textSecondary)));
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline_rounded,
+                size: 48, color: AppColors.textTertiary),
+            const SizedBox(height: 16),
+            Text('Sign in to save jobs',
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            Text('Your saved jobs will appear here',
+                style: GoogleFonts.inter(
+                    fontSize: 13, color: AppColors.textTertiary)),
+          ],
+        ),
+      );
     }
 
-    return FutureBuilder(
-      future: ref.read(jobRepositoryProvider).fetchBookmarkedJobs(uid!),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final jobs = snapshot.data ?? [];
+    // savedJobsProvider re-runs automatically when bookmarkedIdsProvider emits.
+    final savedAsync = ref.watch(savedJobsProvider);
+
+    return savedAsync.when(
+      data: (jobs) {
         if (jobs.isEmpty) {
           return Center(
             child: Column(
@@ -493,6 +507,11 @@ class _SavedJobsTab extends ConsumerWidget {
           ),
         );
       },
+      loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary)),
+      error: (e, _) => Center(
+          child: Text('Error loading saved jobs',
+              style: GoogleFonts.inter(color: AppColors.error))),
     );
   }
 }
