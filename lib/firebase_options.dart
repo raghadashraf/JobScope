@@ -23,20 +23,11 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -50,20 +41,47 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDY4dIRy7JS-wZOTrSrpXgaZ__Sg1fkZa0',
-    appId: '1:1060937525212:web:a48e6ca4a162cf782b5119',
-    messagingSenderId: '1060937525212',
-    projectId: 'jobscope-app',
-    authDomain: 'jobscope-app.firebaseapp.com',
-    storageBucket: 'jobscope-app.firebasestorage.app',
-    measurementId: 'G-XNGDCJ8FW7',
+    apiKey: 'AIzaSyCNR2BcbFPTFdnher5ehmZvFN40aUpJzPg',
+    appId: '1:1034661281054:web:a932d15c73ce994c7a5d0f',
+    messagingSenderId: '1034661281054',
+    projectId: 'flutter-ai-playground-2379c',
+    authDomain: 'flutter-ai-playground-2379c.firebaseapp.com',
+    storageBucket: 'flutter-ai-playground-2379c.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAv8QDRHTJ85gKYM4s9MgShDZ6NBqqkgl0',
-    appId: '1:1060937525212:android:605b47830d15ab282b5119',
-    messagingSenderId: '1060937525212',
-    projectId: 'jobscope-app',
-    storageBucket: 'jobscope-app.firebasestorage.app',
+    apiKey: 'AIzaSyBbD1fZciX5h5HzDUvOKAV8EbGavUYsPZE',
+    appId: '1:1034661281054:android:604f72c65d181f777a5d0f',
+    messagingSenderId: '1034661281054',
+    projectId: 'flutter-ai-playground-2379c',
+    storageBucket: 'flutter-ai-playground-2379c.firebasestorage.app',
   );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyDIUYjcnLwm6v963Vs9mf2M3DJT1NMbiTo',
+    appId: '1:1034661281054:ios:93a4c86769e8cdfe7a5d0f',
+    messagingSenderId: '1034661281054',
+    projectId: 'flutter-ai-playground-2379c',
+    storageBucket: 'flutter-ai-playground-2379c.firebasestorage.app',
+    iosBundleId: 'com.jobscope.jobscope',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyDIUYjcnLwm6v963Vs9mf2M3DJT1NMbiTo',
+    appId: '1:1034661281054:ios:4901b35c89b3f4b37a5d0f',
+    messagingSenderId: '1034661281054',
+    projectId: 'flutter-ai-playground-2379c',
+    storageBucket: 'flutter-ai-playground-2379c.firebasestorage.app',
+    iosBundleId: 'com.Raghad.jobscope',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyCNR2BcbFPTFdnher5ehmZvFN40aUpJzPg',
+    appId: '1:1034661281054:web:a297b9cba579e4d77a5d0f',
+    messagingSenderId: '1034661281054',
+    projectId: 'flutter-ai-playground-2379c',
+    authDomain: 'flutter-ai-playground-2379c.firebaseapp.com',
+    storageBucket: 'flutter-ai-playground-2379c.firebasestorage.app',
+  );
+
 }
