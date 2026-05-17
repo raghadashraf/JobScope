@@ -19,10 +19,18 @@ class AuthRepository {
     required String password,
     required UserRole role,
   }) async {
-    final cred = await _auth.createUserWithEmailAndPassword(
-      email: email.trim(),
-      password: password,
-    );
+    final cred = await _auth
+        .createUserWithEmailAndPassword(
+          email: email.trim(),
+          password: password,
+        )
+        .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw FirebaseAuthException(
+            code: 'network-request-failed',
+            message: 'Sign up timed out. Check your connection and try again.',
+          ),
+        );
 
     final user = UserModel(
       uid: cred.user!.uid,
@@ -41,17 +49,44 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    final cred = await _auth.signInWithEmailAndPassword(
-      email: email.trim(),
-      password: password,
-    );
-    final doc = await _firestore.collection('users').doc(cred.user!.uid).get();
+    final cred = await _auth
+        .signInWithEmailAndPassword(
+          email: email.trim(),
+          password: password,
+        )
+        .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw FirebaseAuthException(
+            code: 'network-request-failed',
+            message: 'Sign in timed out. Check your connection and try again.',
+          ),
+        );
+
+    final doc = await _firestore
+        .collection('users')
+        .doc(cred.user!.uid)
+        .get()
+        .timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => throw FirebaseAuthException(
+            code: 'network-request-failed',
+            message: 'Could not reach the server. Check your connection.',
+          ),
+        );
+
     if (!doc.exists) {
-      throw FirebaseAuthException(
-        code: 'user-not-found',
-        message: 'User profile not found',
+      // Auth account exists but Firestore profile is missing — rebuild it.
+      final user = UserModel(
+        uid: cred.user!.uid,
+        email: email.trim(),
+        name: cred.user!.displayName ?? email.split('@').first,
+        role: UserRole.candidate,
+        createdAt: DateTime.now(),
       );
+      await _firestore.collection('users').doc(user.uid).set(user.toMap());
+      return user;
     }
+
     return UserModel.fromMap(doc.data()!);
   }
 
