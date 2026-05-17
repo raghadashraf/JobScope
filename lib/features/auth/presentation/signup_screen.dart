@@ -8,6 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_router.dart';
 import '../../../data/models/user_model.dart';
 import '../data/auth_providers.dart';
+import 'widgets/auth_widgets.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   final String role;
@@ -17,7 +18,8 @@ class SignupScreen extends ConsumerStatefulWidget {
   ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends ConsumerState<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
@@ -26,6 +28,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _agreeToTerms = false;
   bool _isLoading = false;
 
+  late final AnimationController _animCtrl;
+  late final Animation<double> _fadeAnim;
+  late final Animation<Offset> _slideAnim;
+
   bool get _isCandidate => widget.role == 'candidate';
   LinearGradient get _gradient =>
       _isCandidate ? AppColors.primaryGradient : AppColors.secondaryGradient;
@@ -33,10 +39,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       _isCandidate ? AppColors.primary : AppColors.secondary;
 
   @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween(begin: const Offset(0, 0.12), end: Offset.zero).animate(
+        CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic));
+    _animCtrl.forward();
+  }
+
+  @override
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _passCtrl.dispose();
+    _animCtrl.dispose();
     super.dispose();
   }
 
@@ -54,8 +72,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final role =
-          _isCandidate ? UserRole.candidate : UserRole.recruiter;
+      final role = _isCandidate ? UserRole.candidate : UserRole.recruiter;
       final user = await ref.read(authRepositoryProvider).signUp(
             name: _nameCtrl.text.trim(),
             email: _emailCtrl.text.trim(),
@@ -103,284 +120,312 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final heroHeight = size.height * 0.36;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: _roleColor,
         resizeToAvoidBottomInset: true,
-        body: Column(
+        body: Stack(
           children: [
-            // ── Gradient header ──────────────────────────────────────────────
-            ClipPath(
-              clipper: _BottomArcClipper(),
-              child: Container(
-                decoration: BoxDecoration(gradient: _gradient),
-                child: SafeArea(
-                  bottom: false,
-                  child: SizedBox(
-                    height: 210,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              width: 38,
-                              height: 38,
+            // ── Gradient hero ──────────────────────────────────────────────
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: heroHeight,
+              child: AuthHeroBg(gradient: _gradient, roleColor: _roleColor),
+            ),
+
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Header area
+                  SizedBox(
+                    height: heroHeight,
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color:
+                                      Colors.white.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: Colors.white
+                                          .withValues(alpha: 0.25)),
+                                ),
+                                child: const Icon(
+                                    Icons.arrow_back_ios_new_rounded,
+                                    size: 16,
+                                    color: Colors.white),
+                              ),
+                            ),
+                            const Spacer(),
+
+                            // App icon
+                            Container(
+                              width: 52,
+                              height: 52,
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.18),
-                                borderRadius: BorderRadius.circular(11),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                     color:
-                                        Colors.white.withValues(alpha: 0.25)),
+                                        Colors.white.withValues(alpha: 0.3)),
                               ),
-                              child: const Icon(
-                                  Icons.arrow_back_ios_new_rounded,
-                                  size: 15,
-                                  color: Colors.white),
+                              child: const Icon(Icons.work_rounded,
+                                  color: Colors.white, size: 24),
                             ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(20),
+                            const SizedBox(height: 12),
+
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                _isCandidate
+                                    ? 'Candidate Sign Up'
+                                    : 'Recruiter Sign Up',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color:
+                                      Colors.white.withValues(alpha: 0.95),
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
                             ),
-                            child: Text(
-                              _isCandidate ? 'Candidate' : 'Recruiter',
+                            const SizedBox(height: 10),
+                            Text(
+                              'Create account',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 34,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: -1.2,
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Join thousands of professionals on JobScope',
                               style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.7),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Create account',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -1.2,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Join thousands of professionals on JobScope',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.65),
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                        ],
+                            const SizedBox(height: 28),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ),
 
-            // ── Form ─────────────────────────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _label('Full name'),
-                      const SizedBox(height: 8),
-                      _inputField(
-                        controller: _nameCtrl,
-                        hint: 'Your full name',
-                        icon: Icons.person_outline_rounded,
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Name is required'
-                            : null,
-                      ),
-                      const SizedBox(height: 18),
-                      _label('Email address'),
-                      const SizedBox(height: 8),
-                      _inputField(
-                        controller: _emailCtrl,
-                        hint: 'name@company.com',
-                        icon: Icons.mail_outline_rounded,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Email is required';
-                          if (!v.contains('@')) return 'Enter a valid email';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      _label('Password'),
-                      const SizedBox(height: 8),
-                      _inputField(
-                        controller: _passCtrl,
-                        hint: 'At least 6 characters',
-                        icon: Icons.lock_outline_rounded,
-                        obscure: _obscure,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscure
-                                ? Icons.visibility_off_rounded
-                                : Icons.visibility_rounded,
-                            size: 20,
-                            color: AppColors.textTertiary,
+                  // ── Form card ──────────────────────────────────────────────
+                  FadeTransition(
+                    opacity: _fadeAnim,
+                    child: SlideTransition(
+                      position: _slideAnim,
+                      child: Container(
+                        constraints:
+                            BoxConstraints(minHeight: size.height - heroHeight),
+                        decoration: const BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(32),
+                            topRight: Radius.circular(32),
                           ),
-                          onPressed: () =>
-                              setState(() => _obscure = !_obscure),
                         ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Password is required';
-                          if (v.length < 6) return 'Minimum 6 characters';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 22),
-
-                      // Terms checkbox
-                      GestureDetector(
-                        onTap: () =>
-                            setState(() => _agreeToTerms = !_agreeToTerms),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color: _agreeToTerms
-                                    ? _roleColor
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(7),
-                                border: Border.all(
-                                  color: _agreeToTerms
-                                      ? _roleColor
-                                      : AppColors.borderDark,
-                                  width: 1.5,
-                                ),
+                        padding:
+                            const EdgeInsets.fromLTRB(24, 32, 24, 32),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _sectionLabel('Full name'),
+                              const SizedBox(height: 8),
+                              _inputField(
+                                controller: _nameCtrl,
+                                hint: 'Your full name',
+                                icon: Icons.person_outline_rounded,
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty)
+                                        ? 'Name is required'
+                                        : null,
                               ),
-                              child: _agreeToTerms
-                                  ? const Icon(Icons.check_rounded,
-                                      size: 14, color: Colors.white)
-                                  : null,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text.rich(
-                                TextSpan(
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: AppColors.textSecondary,
-                                    height: 1.5,
+                              const SizedBox(height: 18),
+                              _sectionLabel('Email address'),
+                              const SizedBox(height: 8),
+                              _inputField(
+                                controller: _emailCtrl,
+                                hint: 'name@company.com',
+                                icon: Icons.mail_outline_rounded,
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Email is required';
+                                  }
+                                  if (!v.contains('@')) {
+                                    return 'Enter a valid email';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 18),
+                              _sectionLabel('Password'),
+                              const SizedBox(height: 8),
+                              _inputField(
+                                controller: _passCtrl,
+                                hint: 'At least 6 characters',
+                                icon: Icons.lock_outline_rounded,
+                                obscure: _obscure,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscure
+                                        ? Icons.visibility_off_rounded
+                                        : Icons.visibility_rounded,
+                                    size: 20,
+                                    color: AppColors.textTertiary,
                                   ),
+                                  onPressed: () =>
+                                      setState(() => _obscure = !_obscure),
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Password is required';
+                                  }
+                                  if (v.length < 6) {
+                                    return 'Minimum 6 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Terms checkbox
+                              GestureDetector(
+                                onTap: () => setState(
+                                    () => _agreeToTerms = !_agreeToTerms),
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.center,
                                   children: [
-                                    const TextSpan(text: 'I agree to the '),
-                                    TextSpan(
-                                      text: 'Terms of Service',
-                                      style: TextStyle(
-                                          color: _roleColor,
-                                          fontWeight: FontWeight.w600),
+                                    AnimatedContainer(
+                                      duration:
+                                          const Duration(milliseconds: 150),
+                                      width: 22,
+                                      height: 22,
+                                      decoration: BoxDecoration(
+                                        color: _agreeToTerms
+                                            ? _roleColor
+                                            : Colors.transparent,
+                                        borderRadius:
+                                            BorderRadius.circular(7),
+                                        border: Border.all(
+                                          color: _agreeToTerms
+                                              ? _roleColor
+                                              : AppColors.borderDark,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: _agreeToTerms
+                                          ? const Icon(Icons.check_rounded,
+                                              size: 14, color: Colors.white)
+                                          : null,
                                     ),
-                                    const TextSpan(text: ' and '),
-                                    TextSpan(
-                                      text: 'Privacy Policy',
-                                      style: TextStyle(
-                                          color: _roleColor,
-                                          fontWeight: FontWeight.w600),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text.rich(
+                                        TextSpan(
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            color: AppColors.textSecondary,
+                                            height: 1.5,
+                                          ),
+                                          children: [
+                                            const TextSpan(
+                                                text: 'I agree to the '),
+                                            TextSpan(
+                                              text: 'Terms of Service',
+                                              style: TextStyle(
+                                                  color: _roleColor,
+                                                  fontWeight:
+                                                      FontWeight.w600),
+                                            ),
+                                            const TextSpan(text: ' and '),
+                                            TextSpan(
+                                              text: 'Privacy Policy',
+                                              style: TextStyle(
+                                                  color: _roleColor,
+                                                  fontWeight:
+                                                      FontWeight.w600),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 28),
+                              const SizedBox(height: 28),
 
-                      // Create Account button
-                      SizedBox(
-                        height: 54,
-                        width: double.infinity,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: _gradient,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _roleColor.withValues(alpha: 0.35),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
+                              AuthPrimaryButton(
+                                label: 'Create Account',
+                                gradient: _gradient,
+                                roleColor: _roleColor,
+                                isLoading: _isLoading,
+                                onTap: _handleSignup,
+                              ),
+                              const SizedBox(height: 24),
+
+                              Center(
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: TextButton.styleFrom(
+                                      foregroundColor: _roleColor),
+                                  child: Text.rich(
+                                    TextSpan(children: [
+                                      TextSpan(
+                                        text: 'Already have an account?  ',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: 'Sign In',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: _roleColor,
+                                        ),
+                                      ),
+                                    ]),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                          child: TextButton(
-                            onPressed: _isLoading ? null : _handleSignup,
-                            style: TextButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        color: Colors.white))
-                                : Text(
-                                    'Create Account',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                          ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Sign in link
-                      Center(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                              foregroundColor: _roleColor),
-                          child: Text.rich(
-                            TextSpan(children: [
-                              TextSpan(
-                                text: 'Already have an account?  ',
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'Sign In',
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: _roleColor,
-                                ),
-                              ),
-                            ]),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ],
@@ -389,7 +434,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     );
   }
 
-  Widget _label(String text) => Text(
+  Widget _sectionLabel(String text) => Text(
         text,
         style: GoogleFonts.inter(
           fontSize: 13,
@@ -415,8 +460,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.inter(
-            fontSize: 14, color: AppColors.textTertiary),
+        hintStyle:
+            GoogleFonts.inter(fontSize: 14, color: AppColors.textTertiary),
         prefixIcon: Padding(
           padding: const EdgeInsets.all(13),
           child: Icon(icon, size: 20, color: AppColors.textTertiary),
@@ -450,20 +495,4 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       validator: validator,
     );
   }
-}
-
-class _BottomArcClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 36);
-    path.quadraticBezierTo(
-        size.width / 2, size.height + 18, size.width, size.height - 36);
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }

@@ -93,47 +93,91 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     _animated(
                       0,
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _greeting(),
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              userAsync.when(
-                                data: (user) => Text(
-                                  user?.name ?? 'Welcome back',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary,
-                                    letterSpacing: -0.8,
-                                  ),
-                                ),
-                                loading: () => _shimmer(150, 26),
-                                error: (_, e) => Text('Welcome',
-                                    style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.w800)),
-                              ),
-                              if (userAsync.value?.headline != null &&
-                                  userAsync.value!.headline!.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  userAsync.value!.headline!,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: AppColors.textTertiary,
-                                  ),
+                          // Avatar initial
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
-                            ],
+                            ),
+                            child: Center(
+                              child: userAsync.when(
+                                data: (user) => Text(
+                                  (user?.name.isNotEmpty == true)
+                                      ? user!.name[0].toUpperCase()
+                                      : '?',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                loading: () => const SizedBox(
+                                    width: 20, height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white)),
+                                error: (_, _) => const Icon(
+                                    Icons.person_rounded,
+                                    color: Colors.white, size: 22),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _greeting(),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                userAsync.when(
+                                  data: (user) => Text(
+                                    user?.name ?? 'Welcome back',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textPrimary,
+                                      letterSpacing: -0.6,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  loading: () => _shimmer(140, 22),
+                                  error: (_, _) => Text('Welcome',
+                                      style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w800)),
+                                ),
+                                if (userAsync.value?.headline != null &&
+                                    userAsync.value!.headline!.isNotEmpty) ...[
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    userAsync.value!.headline!,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: AppColors.textTertiary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                           _notificationBell(),
                         ],

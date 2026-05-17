@@ -58,6 +58,13 @@ class _RecruiterDashboardScreenState
     super.dispose();
   }
 
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning 👋';
+    if (h < 17) return 'Good afternoon 👋';
+    return 'Good evening 👋';
+  }
+
   Widget _animated(int i, Widget child) => FadeTransition(
         opacity: _fadeAnims[i],
         child: SlideTransition(position: _slideAnims[i], child: child),
@@ -84,61 +91,136 @@ class _RecruiterDashboardScreenState
                     _animated(
                       0,
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Welcome back 👋',
-                                style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary),
-                              ),
-                              const SizedBox(height: 4),
-                              userAsync.when(
-                                data: (user) => Text(
-                                  user?.name ?? 'Recruiter',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary,
-                                    letterSpacing: -0.8,
-                                  ),
-                                ),
-                                loading: () => const SizedBox(height: 26),
-                                error: (_, _) => const Text('Recruiter'),
-                              ),
-                              if (userAsync.value?.company != null &&
-                                  userAsync.value!.company!.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.business_rounded,
-                                        size: 12,
-                                        color: AppColors.textTertiary),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      userAsync.value!.company!,
-                                      style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          color: AppColors.textTertiary),
-                                    ),
-                                  ],
+                          // Avatar initial
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.secondaryGradient,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.secondary.withValues(alpha: 0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
-                            ],
-                          ),
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
                             ),
-                            child: const Icon(Icons.notifications_outlined,
-                                color: AppColors.textSecondary),
+                            child: Center(
+                              child: userAsync.when(
+                                data: (user) => Text(
+                                  (user?.name.isNotEmpty == true)
+                                      ? user!.name[0].toUpperCase()
+                                      : '?',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                loading: () => const SizedBox(
+                                    width: 20, height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white)),
+                                error: (_, _) => const Icon(
+                                    Icons.person_rounded,
+                                    color: Colors.white, size: 22),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _greeting(),
+                                  style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary),
+                                ),
+                                const SizedBox(height: 2),
+                                userAsync.when(
+                                  data: (user) => Text(
+                                    user?.name ?? 'Recruiter',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textPrimary,
+                                      letterSpacing: -0.6,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  loading: () => const SizedBox(height: 22),
+                                  error: (_, _) => const Text('Recruiter'),
+                                ),
+                                if (userAsync.value?.company != null &&
+                                    userAsync.value!.company!.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 7, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.secondary
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.business_rounded,
+                                                size: 10,
+                                                color: AppColors.secondary),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              userAsync.value!.company!,
+                                              style: GoogleFonts.inter(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.secondary),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          // Notification bell
+                          Stack(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: const Icon(Icons.notifications_outlined,
+                                    color: AppColors.textPrimary),
+                              ),
+                              Positioned(
+                                right: 8, top: 8,
+                                child: Container(
+                                  width: 10, height: 10,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: AppColors.surface, width: 2),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
