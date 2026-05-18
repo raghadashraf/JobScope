@@ -2,11 +2,11 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/secrets.dart';
 
 class GeminiEmbeddingService {
-  static const String _apiKey = 'AIzaSyBYfVm5yXmz_x2vU6WZCFZR-H30_9lKxr4';
-  static const String _embedUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=$_apiKey';
+  static const String _embedBase =
+      'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent';
 
   Future<List<double>> getEmbedding(String text) async {
     final body = jsonEncode({
@@ -19,7 +19,7 @@ class GeminiEmbeddingService {
     });
 
     final response = await http.post(
-      Uri.parse(_embedUrl),
+      Uri.parse('$_embedBase?key=${Secrets.geminiApiKey}'),
       headers: {'Content-Type': 'application/json'},
       body: body,
     );
