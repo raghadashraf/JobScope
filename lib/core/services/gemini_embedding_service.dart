@@ -5,8 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/secrets.dart';
 
 class GeminiEmbeddingService {
-  static const String _embedBase =
-      'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent';
+  static const String _apiKey = Secrets.geminiApiKey;
+  static const String _embedUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=$_apiKey';
 
   Future<List<double>> getEmbedding(String text) async {
     final body = jsonEncode({

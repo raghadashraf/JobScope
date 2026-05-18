@@ -62,6 +62,7 @@ class MatchReason {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 class AiService {
+  static const String _apiKey = Secrets.geminiApiKey;
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
 
