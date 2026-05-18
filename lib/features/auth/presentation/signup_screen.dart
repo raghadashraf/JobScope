@@ -81,6 +81,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           );
 
       if (!mounted) return;
+
+      // Push the correct user into the notifier immediately so the router
+      // redirect fires with the right role before the Firebase stream rebuilds.
+      ref.read(currentUserProvider.notifier).setUser(user);
+
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Welcome to JobScope, ${user.name}! 🎉'),
         backgroundColor: AppColors.success,

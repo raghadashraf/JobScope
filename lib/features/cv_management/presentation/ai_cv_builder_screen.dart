@@ -7,13 +7,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/secrets.dart';
 import '../../../data/models/cv_model.dart';
 import '../../auth/data/auth_providers.dart';
 
 const _kPurple = Color(0xFF7C3AED);
 const _kIndigo = Color(0xFF4F46E5);
 const _kGradient = LinearGradient(colors: [_kPurple, _kIndigo]);
-const _kApiKey = 'AIzaSyBYfVm5yXmz_x2vU6WZCFZR-H30_9lKxr4';
 const _kGeminiUrl =
     'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
 
@@ -225,7 +225,7 @@ class _AiCvBuilderScreenState extends ConsumerState<AiCvBuilderScreen> {
     try {
       final prompt = _buildPrompt();
       final res = await http.post(
-        Uri.parse('$_kGeminiUrl?key=$_kApiKey'),
+        Uri.parse('$_kGeminiUrl?key=${Secrets.geminiApiKey}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'contents': [{'parts': [{'text': prompt}]}],
           'generationConfig': {'temperature': 0.4, 'responseMimeType': 'application/json'}}),

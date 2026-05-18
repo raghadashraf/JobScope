@@ -67,6 +67,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
       if (!mounted) return;
 
+      // Push the correct user into the notifier immediately so the router
+      // redirect fires with the right role before the Firebase stream rebuilds.
+      ref.read(currentUserProvider.notifier).setUser(user);
+
       final expected = _isCandidate ? UserRole.candidate : UserRole.recruiter;
       if (user.role != expected) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
