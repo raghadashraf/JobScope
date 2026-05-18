@@ -276,7 +276,7 @@ $cvText
   // ─── Shared HTTP helper ───────────────────────────────────────────────────
   Future<String> _callGemini(String prompt, {double temperature = 0.7}) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl?key=$_apiKey'),
+      Uri.parse('$_baseUrl?key=${Secrets.geminiApiKey}'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'contents': [

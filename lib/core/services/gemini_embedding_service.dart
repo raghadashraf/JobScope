@@ -20,7 +20,7 @@ class GeminiEmbeddingService {
     });
 
     final response = await http.post(
-      Uri.parse(_embedUrl),
+      Uri.parse('$_embedBase?key=${Secrets.geminiApiKey}'),
       headers: {'Content-Type': 'application/json'},
       body: body,
     );
