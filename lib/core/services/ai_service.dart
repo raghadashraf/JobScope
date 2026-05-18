@@ -62,7 +62,7 @@ class MatchReason {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 class AiService {
-  static const String _apiKey = Secrets.geminiApiKey;
+  static String get _apiKey => Secrets.geminiApiKey;
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
 
@@ -275,8 +275,12 @@ $cvText
 
   // ─── Shared HTTP helper ───────────────────────────────────────────────────
   Future<String> _callGemini(String prompt, {double temperature = 0.7}) async {
+    if (_apiKey.isEmpty) {
+      throw Exception('GEMINI_API_KEY is missing. Add it to your .env file.');
+    }
+
     final response = await http.post(
-      Uri.parse('$_baseUrl?key=${Secrets.geminiApiKey}'),
+      Uri.parse('$_baseUrl?key=$_apiKey'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'contents': [
