@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../data/models/cv_model.dart';
+import '../constants/secrets.dart';
 
 // ─── AI feature models ────────────────────────────────────────────────────────
 
@@ -61,7 +62,7 @@ class MatchReason {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 class AiService {
-  static const String _apiKey = 'AIzaSyBYfVm5yXmz_x2vU6WZCFZR-H30_9lKxr4';
+  static const String _apiKey = Secrets.geminiApiKey;
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
 

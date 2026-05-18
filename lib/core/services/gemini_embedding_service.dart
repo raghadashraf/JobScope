@@ -2,9 +2,10 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/secrets.dart';
 
 class GeminiEmbeddingService {
-  static const String _apiKey = 'AIzaSyBYfVm5yXmz_x2vU6WZCFZR-H30_9lKxr4';
+  static const String _apiKey = Secrets.geminiApiKey;
   static const String _embedUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=$_apiKey';
 
