@@ -8,6 +8,7 @@ import '../../auth/data/auth_providers.dart';
 import '../../applications/data/application_providers.dart';
 import '../../ai_features/data/ai_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
+import 'widgets/cover_letter_sheet.dart';
 import 'widgets/match_badge_widget.dart';
 import 'widgets/match_reasons_sheet.dart';
 
@@ -352,7 +353,7 @@ class JobDetailScreen extends ConsumerWidget {
         ],
       ),
 
-      // ── Bottom apply bar ──────────────────────────────────────────────────
+      // ── Bottom bar ────────────────────────────────────────────────────────
       bottomNavigationBar: Container(
         padding: EdgeInsets.only(
           left: 20,
@@ -360,39 +361,66 @@ class JobDetailScreen extends ConsumerWidget {
           top: 16,
           bottom: MediaQuery.of(context).padding.bottom + 16,
         ),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.surface,
-          border: const Border(top: BorderSide(color: AppColors.border)),
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
-        child: hasApplied
-            ? _AlreadyAppliedButton()
-            : ElevatedButton(
-                onPressed: applyState.status == ApplyStatus.loading
-                    ? null
-                    : () => _showApplyConfirm(context, ref),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                      AppColors.primary.withValues(alpha: 0.5),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          children: [
+            // Cover Letter button
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _showCoverLetterSheet(context, cv),
+                icon: const Icon(Icons.description_outlined, size: 17),
+                label: Text(
+                  'Cover Letter',
+                  style: GoogleFonts.inter(
+                      fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
+                  side: const BorderSide(color: AppColors.primary),
                 ),
-                child: applyState.status == ApplyStatus.loading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(
-                        'Apply Now',
-                        style: GoogleFonts.inter(
-                            fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
               ),
+            ),
+            const SizedBox(width: 12),
+            // Apply / Already Applied button
+            Expanded(
+              child: hasApplied
+                  ? _AlreadyAppliedButton()
+                  : ElevatedButton(
+                      onPressed: applyState.status == ApplyStatus.loading
+                          ? null
+                          : () => _showApplyConfirm(context, ref),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor:
+                            AppColors.primary.withValues(alpha: 0.5),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
+                      ),
+                      child: applyState.status == ApplyStatus.loading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(
+                              'Apply Now',
+                              style: GoogleFonts.inter(
+                                  fontSize: 14, fontWeight: FontWeight.w700),
+                            ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -517,6 +545,41 @@ class JobDetailScreen extends ConsumerWidget {
     );
   }
 
+  void _showCoverLetterSheet(BuildContext context, cv) {
+    if (cv == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(children: [
+            const Icon(Icons.info_outline_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Please upload your CV first to generate a cover letter')),
+          ]),
+          backgroundColor: AppColors.accent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.88,
+        child: CoverLetterSheet(
+          jobId: job.id,
+          jobTitle: job.title,
+          company: job.company,
+          jobDescription: job.description,
+          cvSkills: cv.skills,
+          workExperience: cv.workExperience,
+        ),
+      ),
+    );
+  }
+
   Widget _infoChip(IconData icon, String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -569,8 +632,7 @@ class _AlreadyAppliedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 15),
       decoration: BoxDecoration(
         color: AppColors.success.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
@@ -580,12 +642,12 @@ class _AlreadyAppliedButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.check_circle_rounded,
-              color: AppColors.success, size: 20),
+              color: AppColors.success, size: 18),
           const SizedBox(width: 8),
           Text(
-            'Already Applied',
+            'Applied',
             style: GoogleFonts.inter(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               color: AppColors.success,
             ),

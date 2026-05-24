@@ -307,6 +307,46 @@ $cvText
     return data['candidates'][0]['content']['parts'][0]['text'] as String;
   }
 
+  // ─── Cover Letter Generation ──────────────────────────────────────────────
+  Future<String> generateCoverLetter({
+    required String jobTitle,
+    required String company,
+    required String jobDescription,
+    required List<String> cvSkills,
+    List<WorkExperience> workExperience = const [],
+  }) async {
+    final expText = workExperience.isEmpty
+        ? 'No work experience provided.'
+        : workExperience
+            .map((e) =>
+                '- ${e.title} at ${e.company} (${e.duration}): ${e.description}')
+            .join('\n');
+
+    final prompt = '''
+You are an expert career coach. Write a professional cover letter for the following:
+
+Job Title: $jobTitle
+Company: $company
+Job Description: $jobDescription
+
+Candidate Skills: ${cvSkills.join(', ')}
+Candidate Work Experience:
+$expText
+
+Instructions:
+- Write in first person, professional yet warm tone
+- 3-4 paragraphs: opening hook, relevant experience, skills alignment, closing call-to-action
+- Tailor the letter specifically to the job and company
+- Keep it under 350 words
+- Do NOT include date, address blocks, or "Dear Hiring Manager" header — start directly with the opening paragraph
+- Do NOT use placeholder brackets like [Your Name]
+
+Return ONLY the cover letter text, no extra commentary.
+''';
+
+    return _callGemini(prompt, temperature: 0.75);
+  }
+
   // ─── Career Coach Chat ────────────────────────────────────────────────────
   Future<String> chatWithCoach({
     required List<Map<String, String>> history,
