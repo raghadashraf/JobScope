@@ -11,6 +11,7 @@ class JobCardWidget extends ConsumerWidget {
   final bool isBookmarked;
   final VoidCallback onTap;
   final VoidCallback onBookmark;
+  final VoidCallback? onLongPress;
 
   const JobCardWidget({
     super.key,
@@ -18,6 +19,7 @@ class JobCardWidget extends ConsumerWidget {
     required this.isBookmarked,
     required this.onTap,
     required this.onBookmark,
+    this.onLongPress,
   });
 
   @override
@@ -25,6 +27,7 @@ class JobCardWidget extends ConsumerWidget {
     final matchAsync = ref.watch(jobMatchResultProvider(job.id));
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),

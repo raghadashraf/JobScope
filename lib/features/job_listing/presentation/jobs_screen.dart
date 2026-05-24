@@ -11,6 +11,8 @@ import '../../auth/data/auth_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
 import 'widgets/job_card_widget.dart';
 import 'widgets/job_filter_sheet.dart';
+import 'widgets/my_folders_tab.dart';
+import 'widgets/save_to_folder_sheet.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -27,7 +29,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
+    _tabCtrl = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -225,6 +227,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                             : 'All Jobs',
                       ),
                       const Tab(text: 'Saved'),
+                      const Tab(text: 'My Folders'),
                     ],
                   ),
                 ],
@@ -253,6 +256,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                                 onTap: () => _openDetail(context, job),
                                 onBookmark: () => _toggleBookmark(
                                     job.id, isBookmarked, user?.uid),
+                                onLongPress: () =>
+                                    _showSaveToFolder(context, job.id, job.title),
                               );
                             },
                           ),
@@ -266,7 +271,12 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                     onTap: (job) => _openDetail(context, job),
                     onBookmark: (jobId) =>
                         _toggleBookmark(jobId, true, user?.uid),
+                    onLongPress: (job) =>
+                        _showSaveToFolder(context, job.id, job.title),
                   ),
+
+                  // My Folders tab
+                  MyFoldersTab(uid: user?.uid),
                 ],
               ),
             ),
@@ -294,6 +304,17 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     ref
         .read(bookmarkNotifierProvider.notifier)
         .toggle(jobId, isBookmarked);
+  }
+
+  void _showSaveToFolder(
+      BuildContext context, String jobId, String jobTitle) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          SaveToFolderSheet(jobId: jobId, jobTitle: jobTitle),
+    );
   }
 
   Widget _emptyState() {
@@ -441,9 +462,14 @@ class _SavedJobsTab extends ConsumerWidget {
   final String? uid;
   final void Function(dynamic job) onTap;
   final void Function(String jobId) onBookmark;
+  final void Function(dynamic job) onLongPress;
 
-  const _SavedJobsTab(
-      {this.uid, required this.onTap, required this.onBookmark});
+  const _SavedJobsTab({
+    this.uid,
+    required this.onTap,
+    required this.onBookmark,
+    required this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -504,6 +530,7 @@ class _SavedJobsTab extends ConsumerWidget {
             isBookmarked: true,
             onTap: () => onTap(jobs[i]),
             onBookmark: () => onBookmark(jobs[i].id),
+            onLongPress: () => onLongPress(jobs[i]),
           ),
         );
       },
