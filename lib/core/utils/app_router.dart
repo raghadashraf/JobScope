@@ -22,6 +22,7 @@ import '../../features/home/presentation/post_job_screen.dart';
 import '../../features/home/presentation/recruiter_home_screen.dart';
 import '../../features/job_listing/presentation/job_detail_screen.dart';
 import '../../features/job_listing/presentation/jobs_screen.dart';
+import '../../features/job_listing/presentation/job_deep_link_screen.dart';
 import '../../features/recruiter/presentation/applicant_detail_screen.dart';
 import '../../features/recruiter/presentation/job_applicants_screen.dart';
 
@@ -45,6 +46,7 @@ class AppRoutes {
   static const jobs = '/jobs';
   static const aiCvBuilder = '/ai-cv-builder';
   static const careerCoach = '/career-coach';
+  static const jobDeepLink = '/jobs/:id';
 }
 
 // ─── Auth guard notifier ──────────────────────────────────────────────────────
@@ -186,6 +188,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.careerCoach,
         builder: (_, _) => const CareerCoachScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.jobDeepLink,
+        builder: (_, state) => JobDeepLinkScreen(
+          jobId: state.pathParameters['id']!,
+        ),
       ),
     ],
   );

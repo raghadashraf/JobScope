@@ -8,6 +8,7 @@ import '../../auth/data/auth_providers.dart';
 import '../../applications/data/application_providers.dart';
 import '../../ai_features/data/ai_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
+import '../../../core/services/share_service.dart';
 import 'widgets/cover_letter_sheet.dart';
 import 'widgets/match_badge_widget.dart';
 import 'widgets/match_reasons_sheet.dart';
@@ -57,6 +58,22 @@ class JobDetailScreen extends ConsumerWidget {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
+              // Share button
+              GestureDetector(
+                onTap: () => ShareService().shareJob(job),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Icon(Icons.share_rounded,
+                      size: 20, color: AppColors.textSecondary),
+                ),
+              ),
+              // Bookmark button
               Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: GestureDetector(

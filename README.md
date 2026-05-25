@@ -590,7 +590,6 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 <div align="center">
 
-**Built with ❤️ by Raghad Ashraf**
 
 *Last updated: May 2026*
 
