@@ -63,6 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       final user = await ref.read(authRepositoryProvider).signIn(
             email: _emailCtrl.text.trim(),
             password: _passCtrl.text,
+            fallbackRole: _isCandidate ? UserRole.candidate : UserRole.recruiter,
           );
 
       if (!mounted) return;

@@ -13,7 +13,7 @@ class InterviewTrainingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final effectiveParams = params ??
         const InterviewParams(
-          jobTitle: 'Software Engineer',
+          jobTitle: 'Professional',
           jobDescription: null,
           skills: [],
         );

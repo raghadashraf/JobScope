@@ -1,7 +1,26 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs ls)"
+      "Bash(xargs ls)",
+      "Bash(flutter build *)",
+      "Bash(find ~/Library/Developer/Xcode/DerivedData -name \"*.log\" -newer /Users/Toto/Documents/GitHub/JobScope/pubspec.yaml 2>/dev/null | head -5)",
+      "Read(//Users/Toto/Library/Developer/Xcode/DerivedData/**)",
+      "Bash(flutter pub *)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(tmux new-session *)",
+      "Bash(tmux send-keys *)",
+      "Bash(nohup flutter run -d chrome)",
+      "Read(//tmp/**)",
+      "Bash(sleep 20 && cat /tmp/jobscope_flutter.log)",
+      "Read(//private/tmp/**)",
+      "Bash(xargs cat)",
+      "Bash(pkill -f \"flutter run\")",
+      "Bash(nohup flutter run -d chrome > /tmp/jobscope_flutter.log 2>&1 & *)",
+      "Bash(awk '{print $2}')",
+      "Bash(grep -v \"^$\\\\|@firebase/firestore\")"
+    ],
+    "additionalDirectories": [
+      "/private/tmp"
     ]
   }
 }

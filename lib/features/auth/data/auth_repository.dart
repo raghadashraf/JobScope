@@ -41,6 +41,27 @@ class AuthRepository {
     );
   }
 
+  // ── Retry helper — channel-error on Flutter Web means the Firebase Auth JS
+  // SDK wasn't ready yet; a short delay and retry fixes it reliably.
+  Future<UserCredential> _withAuthRetry(
+      Future<UserCredential> Function() call) async {
+    for (int attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await call();
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'channel-error' && attempt < 2) {
+          await Future.delayed(Duration(milliseconds: 600 * (attempt + 1)));
+          continue;
+        }
+        rethrow;
+      }
+    }
+    throw FirebaseAuthException(
+      code: 'channel-error',
+      message: 'Connection error. Please try again.',
+    );
+  }
+
   // ── Sign up ────────────────────────────────────────────────────────────────
   Future<UserModel> signUp({
     required String name,
@@ -48,15 +69,17 @@ class AuthRepository {
     required String password,
     required UserRole role,
   }) async {
-    final cred = await _auth
-        .createUserWithEmailAndPassword(email: email.trim(), password: password)
-        .timeout(
-          const Duration(seconds: 15),
-          onTimeout: () => throw FirebaseAuthException(
-            code: 'network-request-failed',
-            message: 'Sign up timed out. Check your connection.',
+    final cred = await _withAuthRetry(
+      () => _auth
+          .createUserWithEmailAndPassword(email: email.trim(), password: password)
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => throw FirebaseAuthException(
+              code: 'network-request-failed',
+              message: 'Sign up timed out. Check your connection.',
+            ),
           ),
-        );
+    );
 
     final user = UserModel(
       uid: cred.user!.uid,
@@ -69,24 +92,42 @@ class AuthRepository {
     // 1. Cache in memory immediately (before any await).
     _cachedUser = user;
 
-    // 2. Persist role to disk so it survives app restarts.
+    // 2. Persist role locally — critical fallback if Firestore is unreachable.
     await _saveRoleLocally(user.uid, role);
 
-    // 3. Write to Firestore (source of truth for all devices).
-    await _firestore.collection('users').doc(user.uid).set(user.toMap());
-    await cred.user!.updateDisplayName(name);
+    // 3. Write to Firestore and update display name. These are best-effort:
+    //    if they fail (e.g. slow network), the local cache and SharedPreferences
+    //    already have everything needed to navigate and function. A background
+    //    sync or next sign-in will restore the Firestore doc via signIn().
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .set(user.toMap())
+          .timeout(const Duration(seconds: 10));
+      await cred.user!.updateDisplayName(name);
+    } catch (_) {
+      // Non-fatal: auth account is created, local role is saved.
+    }
 
     return user;
   }
 
   // ── Sign in ────────────────────────────────────────────────────────────────
+  // [fallbackRole] is the role the user selected on the login screen. It is
+  // used only when neither Firestore nor local storage has a record — which
+  // happens on a fresh web session when Firestore is unreachable. Passing it
+  // here means we never lock out a successfully-authenticated user.
   Future<UserModel> signIn({
     required String email,
     required String password,
+    required UserRole fallbackRole,
   }) async {
-    final cred = await _auth.signInWithEmailAndPassword(
-      email: email.trim(),
-      password: password,
+    final cred = await _withAuthRetry(
+      () => _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      ),
     );
     final uid = cred.user!.uid;
 
@@ -115,25 +156,25 @@ class AuthRepository {
 
     // 3. Firestore failed or doc missing — try locally persisted role.
     final localRole = await _loadRoleLocally(uid);
-    if (localRole != null) {
-      final user = UserModel(
-        uid: uid,
-        email: cred.user!.email ?? email.trim(),
-        name: cred.user!.displayName ?? email.split('@').first,
-        role: localRole,
-        createdAt: DateTime.now(),
-      );
-      _cachedUser = user;
-      return user;
-    }
+    final resolvedRole = localRole ?? fallbackRole;
 
-    // 4. No data anywhere — sign out and surface a clear error.
-    await _auth.signOut();
-    throw FirebaseAuthException(
-      code: 'network-request-failed',
-      message:
-          'Could not load your account. Check your connection and try again.',
+    final user = UserModel(
+      uid: uid,
+      email: cred.user!.email ?? email.trim(),
+      name: cred.user!.displayName ?? email.split('@').first,
+      role: resolvedRole,
+      createdAt: DateTime.now(),
     );
+    _cachedUser = user;
+    await _saveRoleLocally(uid, resolvedRole);
+    // Backfill Firestore in the background so future logins have a doc.
+    _firestore
+        .collection('users')
+        .doc(uid)
+        .set(user.toMap())
+        .timeout(const Duration(seconds: 10))
+        .ignore();
+    return user;
   }
 
   // ── Get current user (session restore on app start) ────────────────────────

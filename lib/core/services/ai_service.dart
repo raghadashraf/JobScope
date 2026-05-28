@@ -85,7 +85,7 @@ class AiService {
     List<String> skills = const [],
   }) async {
     final prompt = '''
-You are an expert technical interviewer. Generate 5 scenario-based interview questions for a $jobTitle position.
+You are an expert interviewer. Generate 5 scenario-based interview questions for a $jobTitle position.
 ${skills.isNotEmpty ? 'Key skills required: ${skills.join(', ')}.' : ''}
 ${jobDescription != null && jobDescription.isNotEmpty ? 'Job context: $jobDescription' : ''}
 

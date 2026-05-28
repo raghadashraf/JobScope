@@ -101,10 +101,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       final msg = switch (e.code) {
-        'email-already-in-use' => 'An account with this email already exists',
-        'weak-password' => 'Password is too weak. Use at least 6 characters.',
-        'invalid-email' => 'Invalid email format',
-        _ => 'Sign up failed. Please try again.',
+        'email-already-in-use'   => 'An account with this email already exists',
+        'weak-password'          => 'Password is too weak. Use at least 6 characters.',
+        'invalid-email'          => 'Invalid email format',
+        'network-request-failed' => 'Connection failed. Check your internet.',
+        'channel-error'          => 'Connection error. Check your internet and try again.',
+        _                        => 'Sign up failed. Please try again.',
       };
       _showError(msg);
     } catch (e) {

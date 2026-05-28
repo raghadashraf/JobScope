@@ -278,8 +278,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             subtitle: 'Practice scenario-based interviews',
                             onTap: () {
                               final cv = cvAsync.value;
+                              final user = userAsync.value;
                               final params = InterviewParams(
-                                jobTitle: 'Software Engineer',
+                                jobTitle: user?.headline?.isNotEmpty == true
+                                    ? user!.headline!
+                                    : 'Professional',
                                 skills: cv?.skills ?? const [],
                               );
                               context.push(AppRoutes.interviewTraining,
