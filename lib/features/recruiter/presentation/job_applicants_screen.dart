@@ -1,8 +1,13 @@
+import 'dart:io';
+import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_router.dart';
 import '../../../data/models/application_model.dart';
@@ -11,15 +16,66 @@ import '../../applications/data/application_providers.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../data/recruiter_providers.dart';
 
-class JobApplicantsScreen extends ConsumerWidget {
+class JobApplicantsScreen extends ConsumerStatefulWidget {
   final JobModel job;
   const JobApplicantsScreen({super.key, required this.job});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final appsAsync = ref.watch(sortedApplicantsProvider(job.id));
+  ConsumerState<JobApplicantsScreen> createState() =>
+      _JobApplicantsScreenState();
+}
+
+class _JobApplicantsScreenState extends ConsumerState<JobApplicantsScreen> {
+  bool _isExporting = false;
+
+  Future<void> _exportCsv(List<ApplicationModel> apps) async {
+    setState(() => _isExporting = true);
+    try {
+      final dateFmt = DateFormat('yyyy-MM-dd');
+      final rows = <List<dynamic>>[
+        ['Name', 'Email', 'Status', 'Applied Date', 'Match Score', 'Job Title'],
+        ...apps.map((a) => [
+              a.candidateName,
+              a.candidateEmail,
+              a.statusDisplayName,
+              dateFmt.format(a.appliedAt),
+              a.matchScore?.toString() ?? '—',
+              a.jobTitle,
+            ]),
+      ];
+
+      final csv = const ListToCsvConverter().convert(rows);
+      final dir = await getTemporaryDirectory();
+      final file =
+          File('${dir.path}/applicants_${widget.job.title.replaceAll(' ', '_')}.csv');
+      await file.writeAsString(csv);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Applicants for ${widget.job.title}',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Export failed: $e',
+              style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appsAsync = ref.watch(sortedApplicantsProvider(widget.job.id));
     final filter = ref.watch(applicantFilterProvider);
-    final allAppsAsync = ref.watch(jobApplicationsStreamProvider(job.id));
+    final allAppsAsync =
+        ref.watch(jobApplicationsStreamProvider(widget.job.id));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -43,6 +99,28 @@ class JobApplicantsScreen extends ConsumerWidget {
               ),
               onPressed: () => Navigator.pop(context),
             ),
+            actions: [
+              allAppsAsync.when(
+                data: (apps) => _isExporting
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.primary),
+                        ),
+                      )
+                    : IconButton(
+                        tooltip: 'Export CSV',
+                        icon: const Icon(Icons.download_rounded,
+                            color: AppColors.textSecondary),
+                        onPressed: apps.isEmpty ? null : () => _exportCsv(apps),
+                      ),
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+              ),
+            ],
           ),
 
           // ── Header ─────────────────────────────────────────────────────
@@ -53,7 +131,7 @@ class JobApplicantsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    job.title,
+                    widget.job.title,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
@@ -62,7 +140,7 @@ class JobApplicantsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    job.company,
+                    widget.job.company,
                     style: GoogleFonts.inter(
                         fontSize: 14, color: AppColors.textSecondary),
                   ),
