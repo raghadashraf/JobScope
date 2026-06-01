@@ -130,29 +130,29 @@ class JobRepository {
 
   // ─── Recruiter: Create job ─────────────────────────────────────────────────
   Future<JobModel> createJob(JobModel job) async {
-    final doc = await _jobs.add(job.toMap());
-    await doc.update({'id': doc.id});
+    final doc = await _jobs.add(job.toMap()).timeout(const Duration(seconds: 10));
+    await doc.update({'id': doc.id}).timeout(const Duration(seconds: 10));
     return JobModel.fromMap({...job.toMap(), 'id': doc.id}, docId: doc.id);
   }
 
   // ─── Recruiter: Update job ─────────────────────────────────────────────────
   Future<void> updateJob(JobModel job) async {
-    await _jobs.doc(job.id).update(job.toMap());
+    await _jobs.doc(job.id).update(job.toMap()).timeout(const Duration(seconds: 10));
   }
 
   // ─── Recruiter: Deactivate job (soft delete) ──────────────────────────────
   Future<void> deactivateJob(String id) async {
-    await _jobs.doc(id).update({'isActive': false});
+    await _jobs.doc(id).update({'isActive': false}).timeout(const Duration(seconds: 10));
   }
 
   // ─── Recruiter: Re-activate job ───────────────────────────────────────────
   Future<void> activateJob(String id) async {
-    await _jobs.doc(id).update({'isActive': true});
+    await _jobs.doc(id).update({'isActive': true}).timeout(const Duration(seconds: 10));
   }
 
   // ─── Recruiter: Hard-delete job ───────────────────────────────────────────
   Future<void> deleteJob(String id) async {
-    await _jobs.doc(id).delete();
+    await _jobs.doc(id).delete().timeout(const Duration(seconds: 10));
   }
 
   // ─── Bookmarks ────────────────────────────────────────────────────────────

@@ -270,8 +270,14 @@ class AuthRepository {
       'linkedinUrl': linkedinUrl,
       'website': website,
       'company': company,
-    });
-    await _auth.currentUser?.updateDisplayName(name);
-    if (photoUrl != null) await _auth.currentUser?.updatePhotoURL(photoUrl);
+    }).timeout(const Duration(seconds: 10));
+    await _auth.currentUser
+        ?.updateDisplayName(name)
+        .timeout(const Duration(seconds: 10));
+    if (photoUrl != null) {
+      await _auth.currentUser
+          ?.updatePhotoURL(photoUrl)
+          .timeout(const Duration(seconds: 10));
+    }
   }
 }

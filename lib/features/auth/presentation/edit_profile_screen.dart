@@ -443,7 +443,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) _showSnack(e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) {
+        final msg = e.toString().contains('TimeoutException')
+            ? 'Request timed out — check your connection.'
+            : e.toString().contains('permission-denied')
+                ? 'Permission denied. Contact support.'
+                : e.toString().replaceFirst('Exception: ', '');
+        _showSnack(msg);
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

@@ -72,7 +72,7 @@ class ApplyNotifier extends Notifier<ApplyState> {
       return;
     }
 
-    final currentUser = await ref.read(currentUserProvider.future);
+    final currentUser = ref.read(currentUserProvider).value;
     final cv = ref.read(cvStreamProvider).value;
 
     state = state.copyWith(status: ApplyStatus.loading);

@@ -156,7 +156,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     setState(() => _isLoading = true);
     try {
       final user = ref.read(firebaseUserProvider).value!;
-      final currentUser = await ref.read(currentUserProvider.future);
+      final currentUser = ref.read(currentUserProvider).value;
       final repo = ref.read(jobRepositoryProvider);
 
       final job = JobModel(
@@ -194,8 +194,13 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final msg = e.toString().contains('TimeoutException')
+            ? 'Request timed out — check your connection.'
+            : e.toString().contains('permission-denied')
+                ? 'Permission denied. Contact support.'
+                : 'Failed: ${e.toString().replaceFirst('Exception: ', '')}';
         ScaffoldMessenger.of(context)
-            .showSnackBar(_snackbar('Failed: $e', AppColors.error));
+            .showSnackBar(_snackbar(msg, AppColors.error));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

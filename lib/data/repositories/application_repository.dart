@@ -38,7 +38,7 @@ class ApplicationRepository {
       appliedAt: DateTime.now(),
     );
 
-    await doc.set(application.toMap());
+    await doc.set(application.toMap()).timeout(const Duration(seconds: 10));
     return application;
   }
 
@@ -109,7 +109,7 @@ class ApplicationRepository {
     await _applications.doc(applicationId).update({
       'status': status.name,
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    }).timeout(const Duration(seconds: 10));
   }
 
   // ─── Update recruiter notes on an application ─────────────────────────────
@@ -120,7 +120,7 @@ class ApplicationRepository {
     await _applications.doc(applicationId).update({
       'notes': notes,
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    }).timeout(const Duration(seconds: 10));
   }
 
   // ─── Fetch single application ─────────────────────────────────────────────
@@ -132,6 +132,6 @@ class ApplicationRepository {
 
   // ─── Withdraw application ─────────────────────────────────────────────────
   Future<void> withdraw(String applicationId) async {
-    await _applications.doc(applicationId).delete();
+    await _applications.doc(applicationId).delete().timeout(const Duration(seconds: 10));
   }
 }
