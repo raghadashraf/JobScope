@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
 
 class LocalNotificationService {
   static final LocalNotificationService _instance =
@@ -38,6 +39,34 @@ class LocalNotificationService {
           channelDescription:
               'Updates on your job application status',
           importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
+  }
+
+  Future<void> showInterviewConfirmed({
+    required String jobTitle,
+    required String company,
+    required DateTime slot,
+  }) async {
+    final formatted = DateFormat('EEE, MMM d · h:mm a').format(slot);
+    await _plugin.show(
+      id: slot.millisecondsSinceEpoch ~/ 1000,
+      title: 'Interview Confirmed! 🎉',
+      body: '$jobTitle at $company — $formatted',
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'interview_notifications',
+          'Interview Notifications',
+          channelDescription: 'Interview scheduling confirmations',
+          importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
         ),

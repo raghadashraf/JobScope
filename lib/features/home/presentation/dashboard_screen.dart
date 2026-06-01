@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_router.dart';
+import '../../messaging/data/messaging_providers.dart';
+import '../../recruiter/data/interview_providers.dart';
 import '../../../data/models/application_model.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../applications/data/application_providers.dart';
@@ -18,10 +20,12 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final List<Animation<double>> _fadeAnims;
   late final List<Animation<Offset>> _slideAnims;
+  late final AnimationController _pulseCtrl;
+  late final Animation<double> _pulseAnim;
 
   static const _sections = 5;
 
@@ -53,10 +57,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     });
 
     _ctrl.forward();
+
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 0.7, end: 1.35).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+    );
   }
 
   @override
   void dispose() {
+    _pulseCtrl.dispose();
     _ctrl.dispose();
     super.dispose();
   }
@@ -227,14 +240,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                   icon: Icons.send_rounded,
                                   label: 'Applied',
                                   value: '$appliedCount',
-                                  color: AppColors.secondary)),
+                                  color: AppColors.secondary,
+                                  count: appliedCount)),
                           const SizedBox(width: 12),
                           Expanded(
                               child: _statCard(
                                   icon: Icons.check_circle_rounded,
                                   label: 'Shortlisted',
                                   value: '$shortlistedCount',
-                                  color: AppColors.success)),
+                                  color: AppColors.success,
+                                  count: shortlistedCount)),
                         ],
                       ),
                     ),
@@ -298,6 +313,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             onTap: () => context.push(AppRoutes.jobs),
                           ),
                           const SizedBox(height: 12),
+                          _actionTileWithBadge(
+                            icon: Icons.calendar_month_rounded,
+                            iconColor: const Color(0xFF0891B2),
+                            title: 'My Interviews',
+                            subtitle: 'View and confirm interview slots',
+                            badge: ref.watch(pendingInterviewsCountProvider),
+                            onTap: () =>
+                                context.push(AppRoutes.candidateInterviews),
+                          ),
+                          const SizedBox(height: 12),
+                          _actionTileWithBadge(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            iconColor: const Color(0xFF7C3AED),
+                            title: 'Messages',
+                            subtitle: 'Chat with recruiters',
+                            badge: ref.watch(totalUnreadProvider),
+                            onTap: () =>
+                                context.push(AppRoutes.conversations),
+                          ),
+                          const SizedBox(height: 12),
                           _actionTile(
                             icon: Icons.school_rounded,
                             iconColor: AppColors.accent,
@@ -355,13 +390,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           Positioned(
             right: 8,
             top: 8,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: AppColors.error,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surface, width: 2),
+            child: ScaleTransition(
+              scale: _pulseAnim,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AppColors.error,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.surface, width: 2),
+                ),
               ),
             ),
           ),
@@ -437,35 +475,46 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ],
             ),
             const SizedBox(height: 20),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$strength',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 52,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      height: 1),
-                ),
-                Text(
-                  '%',
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.8)),
-                ),
-              ],
+            TweenAnimationBuilder<int>(
+              tween: IntTween(begin: 0, end: strength),
+              duration: const Duration(milliseconds: 1200),
+              curve: Curves.easeOutCubic,
+              builder: (_, v, _) => Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$v',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 52,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1),
+                  ),
+                  Text(
+                    '%',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.8)),
+                  ),
+                ],
+              ),
             ),
             if (hasCv) ...[
               const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: strength / 100,
-                  backgroundColor: Colors.white.withValues(alpha: 0.25),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                  minHeight: 5,
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: strength / 100),
+                duration: const Duration(milliseconds: 1400),
+                curve: Curves.easeOutCubic,
+                builder: (_, v, _) => ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: v,
+                    backgroundColor: Colors.white.withValues(alpha: 0.25),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.white),
+                    minHeight: 5,
+                  ),
                 ),
               ),
             ],
@@ -563,6 +612,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     required String label,
     required String value,
     required Color color,
+    int? count,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -583,11 +633,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(height: 12),
-          Text(value,
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary)),
+          count != null
+              ? TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: count),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeOut,
+                  builder: (_, v, _) => Text(
+                    '$v',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary),
+                  ),
+                )
+              : Text(value,
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary)),
           Text(label,
               style: GoogleFonts.inter(
                   fontSize: 10,
@@ -668,6 +731,89 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         ],
                       ],
                     ),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  size: 14, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionTileWithBadge({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required int badge,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: iconColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(icon, color: iconColor, size: 22),
+                  ),
+                  if (badge > 0)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.error,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          badge > 9 ? '9+' : '$badge',
+                          style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary)),
                     const SizedBox(height: 2),
                     Text(subtitle,
                         style: GoogleFonts.inter(

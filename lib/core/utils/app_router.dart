@@ -25,6 +25,10 @@ import '../../features/job_listing/presentation/jobs_screen.dart';
 import '../../features/job_listing/presentation/job_deep_link_screen.dart';
 import '../../features/recruiter/presentation/applicant_detail_screen.dart';
 import '../../features/recruiter/presentation/job_applicants_screen.dart';
+import '../../features/home/presentation/candidate_interviews_screen.dart';
+import '../../features/messaging/data/messaging_providers.dart';
+import '../../features/messaging/presentation/conversations_screen.dart';
+import '../../features/messaging/presentation/chat_screen.dart';
 
 // ─── Route paths ──────────────────────────────────────────────────────────────
 class AppRoutes {
@@ -47,6 +51,9 @@ class AppRoutes {
   static const aiCvBuilder = '/ai-cv-builder';
   static const careerCoach = '/career-coach';
   static const jobDeepLink = '/jobs/:id';
+  static const candidateInterviews = '/candidate-interviews';
+  static const conversations = '/conversations';
+  static const chat = '/chat';
 }
 
 // ─── Auth guard notifier ──────────────────────────────────────────────────────
@@ -194,6 +201,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => JobDeepLinkScreen(
           jobId: state.pathParameters['id']!,
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.candidateInterviews,
+        builder: (_, _) => const CandidateInterviewsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.conversations,
+        builder: (_, _) => const ConversationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.chat,
+        redirect: (_, state) =>
+            state.extra is ChatParams ? null : AppRoutes.conversations,
+        builder: (_, state) =>
+            ChatScreen(params: state.extra as ChatParams),
       ),
     ],
   );

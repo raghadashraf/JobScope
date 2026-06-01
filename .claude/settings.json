@@ -17,7 +17,8 @@
       "Bash(pkill -f \"flutter run\")",
       "Bash(nohup flutter run -d chrome > /tmp/jobscope_flutter.log 2>&1 & *)",
       "Bash(awk '{print $2}')",
-      "Bash(grep -v \"^$\\\\|@firebase/firestore\")"
+      "Bash(grep -v \"^$\\\\|@firebase/firestore\")",
+      "Bash(awk '{print $0}')"
     ],
     "additionalDirectories": [
       "/private/tmp"

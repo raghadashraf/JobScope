@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_router.dart';
+import '../../messaging/data/messaging_providers.dart';
 import '../../../data/models/application_model.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../../auth/data/auth_providers.dart';
@@ -22,7 +25,7 @@ class _RecruiterDashboardScreenState
   late final List<Animation<double>> _fadeAnims;
   late final List<Animation<Offset>> _slideAnims;
 
-  static const _sections = 5;
+  static const _sections = 6;
 
   @override
   void initState() {
@@ -323,11 +326,97 @@ class _RecruiterDashboardScreenState
                         ],
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 20),
+
+                    // ── Messages quick-action ───────────────────────────────
+                    _animated(
+                      3,
+                      Consumer(
+                        builder: (ctx, ref, _) {
+                          final unread = ref.watch(totalUnreadProvider);
+                          return GestureDetector(
+                            onTap: () => ctx.push(AppRoutes.conversations),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Row(
+                                children: [
+                                  Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.secondary
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(
+                                            Icons.chat_bubble_outline_rounded,
+                                            color: AppColors.secondary,
+                                            size: 20),
+                                      ),
+                                      if (unread > 0)
+                                        Positioned(
+                                          top: -4,
+                                          right: -4,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: AppColors.error,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Text(
+                                              unread > 9 ? '9+' : '$unread',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Messages',
+                                            style: GoogleFonts.inter(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.textPrimary)),
+                                        Text('Chat with candidates',
+                                            style: GoogleFonts.inter(
+                                                fontSize: 12,
+                                                color:
+                                                    AppColors.textSecondary)),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_forward_ios_rounded,
+                                      size: 14,
+                                      color: AppColors.textTertiary),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
                     // ── Recent Activity header ──────────────────────────────
                     _animated(
-                      3,
+                      4,
                       Text(
                         'Recent Activity',
                         style: GoogleFonts.plusJakartaSans(
@@ -342,7 +431,7 @@ class _RecruiterDashboardScreenState
 
                     // ── Activity list ───────────────────────────────────────
                     _animated(
-                      4,
+                      5,
                       recentAsync.when(
                         data: (apps) {
                           final recent = apps.take(5).toList();

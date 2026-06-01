@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/job_matching_service.dart';
+import '../../../core/utils/app_router.dart';
 import '../../../data/models/application_model.dart';
 import '../../applications/data/application_providers.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
+import '../../auth/data/auth_providers.dart';
 import '../../job_listing/presentation/widgets/match_badge_widget.dart';
+import '../../messaging/data/messaging_providers.dart';
 import '../data/recruiter_providers.dart';
+import 'schedule_interview_sheet.dart';
 
 class ApplicantDetailScreen extends ConsumerStatefulWidget {
   final ApplicationModel application;
@@ -453,6 +458,49 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
               ),
             ),
           ),
+          // ── Schedule Interview + Message ─────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Row(
+                children: [
+                  _actionBtn(
+                    'Schedule Interview',
+                    Icons.calendar_month_rounded,
+                    AppColors.primary,
+                    () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) =>
+                          ScheduleInterviewSheet(application: app),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _actionBtn(
+                    'Message',
+                    Icons.chat_bubble_outline_rounded,
+                    AppColors.secondary,
+                    () {
+                      final me = ref.read(currentUserProvider).value;
+                      if (me == null) return;
+                      context.push(
+                        AppRoutes.chat,
+                        extra: ChatParams(
+                          convId: buildConvId(me.uid, app.candidateId),
+                          otherUid: app.candidateId,
+                          otherName: app.candidateName,
+                          jobTitle: app.jobTitle,
+                          applicationId: app.id,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           if (app.status == ApplicationStatus.pending ||
               app.status == ApplicationStatus.shortlisted)
             SliverToBoxAdapter(

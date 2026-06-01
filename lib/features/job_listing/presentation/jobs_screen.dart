@@ -250,7 +250,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                               final job = jobs[i];
                               final isBookmarked =
                                   bookmarkedIds.contains(job.id);
-                              return JobCardWidget(
+                              final card = JobCardWidget(
                                 job: job,
                                 isBookmarked: isBookmarked,
                                 onTap: () => _openDetail(context, job),
@@ -259,6 +259,14 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                                 onLongPress: () =>
                                     _showSaveToFolder(context, job.id, job.title),
                               );
+                              if (i < 8) {
+                                return _StaggeredCard(
+                                  key: ValueKey(job.id),
+                                  index: i,
+                                  child: card,
+                                );
+                              }
+                              return card;
                             },
                           ),
                     loading: () => _shimmerList(),
@@ -455,6 +463,55 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           borderRadius: BorderRadius.circular(radius),
         ),
       );
+}
+
+// ── Staggered entrance animation wrapper ───────────────────────────────────────
+class _StaggeredCard extends StatefulWidget {
+  final int index;
+  final Widget child;
+
+  const _StaggeredCard({super.key, required this.index, required this.child});
+
+  @override
+  State<_StaggeredCard> createState() => _StaggeredCardState();
+}
+
+class _StaggeredCardState extends State<_StaggeredCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
+    _opacity = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween(begin: const Offset(0, 0.12), end: Offset.zero).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic),
+    );
+    final delay = widget.index * 60;
+    Future.delayed(Duration(milliseconds: delay), () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(position: _slide, child: widget.child),
+    );
+  }
 }
 
 // ── Saved jobs tab ─────────────────────────────────────────────────────────────
