@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/firestore_helpers.dart';
 import '../../../core/services/ai_service.dart';
 import '../../../core/services/job_matching_service.dart';
 import '../../../data/models/cv_model.dart';
@@ -179,7 +180,7 @@ class SaveCoverLetterNotifier extends Notifier<SaveCoverLetterState> {
 
     state = const SaveCoverLetterState(status: SaveCoverLetterStatus.saving);
     try {
-      await FirebaseFirestore.instance
+      await appFirestore
           .collection('cover_letters')
           .doc('${user.uid}_$jobId')
           .set({

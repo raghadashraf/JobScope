@@ -1,5 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/firestore_helpers.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/models/chat_message_model.dart';
 import '../../../data/models/cv_model.dart';
@@ -13,7 +13,7 @@ final coachChatStreamProvider = StreamProvider<List<ChatMessage>>((ref) {
   final user = ref.watch(firebaseUserProvider).value;
   if (user == null) return Stream.value([]);
 
-  return FirebaseFirestore.instance
+  return appFirestore
       .collection('users')
       .doc(user.uid)
       .collection('coach_chat')
@@ -36,7 +36,7 @@ class CoachChatNotifier extends Notifier<bool> {
     state = true;
 
     final uid = firebaseUser.uid;
-    final chatCol = FirebaseFirestore.instance
+    final chatCol = appFirestore
         .collection('users')
         .doc(uid)
         .collection('coach_chat');
@@ -94,13 +94,13 @@ class CoachChatNotifier extends Notifier<bool> {
     final firebaseUser = ref.read(firebaseUserProvider).value;
     if (firebaseUser == null) return;
 
-    final snap = await FirebaseFirestore.instance
+    final snap = await appFirestore
         .collection('users')
         .doc(firebaseUser.uid)
         .collection('coach_chat')
         .get();
 
-    final batch = FirebaseFirestore.instance.batch();
+    final batch = appFirestore.batch();
     for (final doc in snap.docs) {
       batch.delete(doc.reference);
     }

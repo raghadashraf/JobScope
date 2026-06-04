@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/repositories/application_repository.dart';
+import '../../ai_features/data/ai_providers.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
+import '../../job_listing/data/job_providers.dart';
 
 // ─── Repository provider ──────────────────────────────────────────────────────
 final applicationRepositoryProvider =
@@ -78,6 +80,21 @@ class ApplyNotifier extends Notifier<ApplyState> {
     state = state.copyWith(status: ApplyStatus.loading);
 
     try {
+      int? matchScore;
+      if (cv != null && cv.skills.isNotEmpty) {
+        final job = await ref.read(jobRepositoryProvider).fetchJob(jobId);
+        if (job != null) {
+          try {
+            final result = await ref
+                .read(jobMatchingServiceProvider)
+                .calculateMatch(cv, job);
+            matchScore = result.score;
+          } catch (_) {
+            // Apply proceeds without matchScore if embedding/API fails.
+          }
+        }
+      }
+
       final application = await ref
           .read(applicationRepositoryProvider)
           .apply(
@@ -89,6 +106,7 @@ class ApplyNotifier extends Notifier<ApplyState> {
             candidateEmail: user.email ?? '',
             candidatePhotoUrl: currentUser?.photoUrl,
             cvUrl: cv?.fileUrl,
+            matchScore: matchScore,
           );
 
       state = ApplyState(

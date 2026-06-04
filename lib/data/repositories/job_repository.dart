@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/utils/firestore_helpers.dart';
 import '../models/job_model.dart';
 
 class JobPage {
@@ -14,7 +15,7 @@ class JobPage {
 }
 
 class JobRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = appFirestore;
   static const int _pageSize = 10;
 
   CollectionReference get _jobs => _firestore.collection('jobs');
@@ -130,29 +131,33 @@ class JobRepository {
 
   // ─── Recruiter: Create job ─────────────────────────────────────────────────
   Future<JobModel> createJob(JobModel job) async {
-    final doc = await _jobs.add(job.toMap()).timeout(const Duration(seconds: 10));
-    await doc.update({'id': doc.id}).timeout(const Duration(seconds: 10));
-    return JobModel.fromMap({...job.toMap(), 'id': doc.id}, docId: doc.id);
+    final ref = _jobs.doc();
+    final id = ref.id;
+    final data = firestoreEncode({...job.toMap(), 'id': id});
+    await firestoreWrite(ref.set(data));
+    return JobModel.fromMap(data, docId: id);
   }
 
   // ─── Recruiter: Update job ─────────────────────────────────────────────────
   Future<void> updateJob(JobModel job) async {
-    await _jobs.doc(job.id).update(job.toMap()).timeout(const Duration(seconds: 10));
+    await firestoreWrite(
+      _jobs.doc(job.id).update(firestoreEncode(job.toMap())),
+    );
   }
 
   // ─── Recruiter: Deactivate job (soft delete) ──────────────────────────────
   Future<void> deactivateJob(String id) async {
-    await _jobs.doc(id).update({'isActive': false}).timeout(const Duration(seconds: 10));
+    await firestoreWrite(_jobs.doc(id).update({'isActive': false}));
   }
 
   // ─── Recruiter: Re-activate job ───────────────────────────────────────────
   Future<void> activateJob(String id) async {
-    await _jobs.doc(id).update({'isActive': true}).timeout(const Duration(seconds: 10));
+    await firestoreWrite(_jobs.doc(id).update({'isActive': true}));
   }
 
   // ─── Recruiter: Hard-delete job ───────────────────────────────────────────
   Future<void> deleteJob(String id) async {
-    await _jobs.doc(id).delete().timeout(const Duration(seconds: 10));
+    await firestoreWrite(_jobs.doc(id).delete());
   }
 
   // ─── Bookmarks ────────────────────────────────────────────────────────────

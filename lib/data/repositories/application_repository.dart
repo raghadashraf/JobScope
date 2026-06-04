@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/utils/firestore_helpers.dart';
 import '../models/application_model.dart';
 
 class ApplicationRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = appFirestore;
 
   CollectionReference get _applications =>
       _firestore.collection('applications');
@@ -17,6 +18,7 @@ class ApplicationRepository {
     required String candidateEmail,
     String? candidatePhotoUrl,
     String? cvUrl,
+    int? matchScore,
   }) async {
     final existing = await hasApplied(jobId: jobId, candidateId: candidateId);
     if (existing) {
@@ -36,6 +38,7 @@ class ApplicationRepository {
       cvUrl: cvUrl,
       status: ApplicationStatus.pending,
       appliedAt: DateTime.now(),
+      matchScore: matchScore,
     );
 
     await doc.set(application.toMap()).timeout(const Duration(seconds: 10));

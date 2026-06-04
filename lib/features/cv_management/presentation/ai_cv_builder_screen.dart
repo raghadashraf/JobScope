@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/firestore_helpers.dart';
 import '../../../core/constants/secrets.dart';
 import '../../../data/models/cv_model.dart';
 import '../../auth/data/auth_providers.dart';
@@ -258,7 +259,7 @@ class _AiCvBuilderScreenState extends ConsumerState<AiCvBuilderScreen> {
         profileStrength: score.clamp(0, 100),
       );
 
-      await FirebaseFirestore.instance.collection('cvs').doc(uid).set(cv.toMap(), SetOptions(merge: true));
+      await appFirestore.collection('cvs').doc(uid).set(cv.toMap(), SetOptions(merge: true));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

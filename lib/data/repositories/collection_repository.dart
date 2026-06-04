@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/utils/firestore_helpers.dart';
 import '../models/job_collection_model.dart';
 
 class CollectionRepository {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = appFirestore;
 
   CollectionReference _ref(String uid) =>
       _db.collection('users').doc(uid).collection('collections');

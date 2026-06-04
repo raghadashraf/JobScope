@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../data/models/cv_model.dart';
+import '../../data/models/training_session_model.dart';
 import '../constants/secrets.dart';
 
 // ─── AI feature models ────────────────────────────────────────────────────────
@@ -40,6 +41,18 @@ class QuizQuestion {
         options: List<String>.from(m['options'] ?? []),
         correctIndex: (m['correctIndex'] as num?)?.toInt() ?? 0,
         explanation: m['explanation'] as String? ?? '',
+      );
+}
+
+class TrainAnswerEvaluation {
+  final int score;
+  final String feedback;
+  const TrainAnswerEvaluation({required this.score, required this.feedback});
+
+  factory TrainAnswerEvaluation.fromMap(Map<String, dynamic> m) =>
+      TrainAnswerEvaluation(
+        score: ((m['score'] as num?)?.toInt() ?? 0).clamp(0, 100),
+        feedback: m['feedback'] as String? ?? '',
       );
 }
 
@@ -105,6 +118,57 @@ Return ONLY a valid JSON array — no markdown, no explanation:
     return parsed
         .map((e) => InterviewQuestion.fromMap(Map<String, dynamic>.from(e)))
         .toList();
+  }
+
+  // ─── Train Before Apply ───────────────────────────────────────────────────
+  Future<List<TrainQuestion>> generateTrainBeforeApplyQuestions({
+    required String jobTitle,
+    required String company,
+    required String jobDescription,
+    List<String> skills = const [],
+  }) async {
+    final prompt = '''
+You are an interview coach. Generate exactly 5 practice questions for a candidate applying to:
+Role: $jobTitle at $company
+${skills.isNotEmpty ? 'Required skills: ${skills.join(', ')}.' : ''}
+Job context: $jobDescription
+
+Return ONLY a valid JSON array (no markdown):
+[
+  {"question": "...", "scenario": "Brief scenario (1-2 sentences)"}
+]
+''';
+
+    final rawText = await _callGemini(prompt);
+    final cleaned = _stripMarkdown(rawText);
+    final List<dynamic> parsed = jsonDecode(cleaned);
+    return parsed
+        .map((e) => TrainQuestion.fromMap(Map<String, dynamic>.from(e)))
+        .take(5)
+        .toList();
+  }
+
+  Future<TrainAnswerEvaluation> evaluateTrainAnswer({
+    required String jobTitle,
+    required String question,
+    required String scenario,
+    required String userAnswer,
+  }) async {
+    final prompt = '''
+You are evaluating a job applicant's practice answer for a $jobTitle role.
+
+Question: $question
+Scenario: $scenario
+Candidate answer: $userAnswer
+
+Score 0-100 for relevance, clarity, and job fit. Return ONLY JSON:
+{"score": 75, "feedback": "2-4 sentences of constructive feedback"}
+''';
+
+    final rawText = await _callGemini(prompt, temperature: 0.3);
+    final cleaned = _stripMarkdown(rawText);
+    final Map<String, dynamic> parsed = jsonDecode(cleaned);
+    return TrainAnswerEvaluation.fromMap(parsed);
   }
 
   // ─── Skill Quiz ───────────────────────────────────────────────────────────

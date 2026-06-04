@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Jobs: any signed-in user can read; only the recruiter can create/update/delete.
+    match /jobs/{jobId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.recruiterId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.recruiterId == request.auth.uid;
+    }
+
+    // User profile + subcollections (bookmarks, training_sessions, notifications).
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+
+      match /{subcollection}/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Applications, messaging, interviews, CVs — authenticated access.
+    match /applications/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /conversations/{convId} {
+      allow read, write: if request.auth != null;
+      match /messages/{msgId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+    match /interviews/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /cvs/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /cover_letters/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /collections/{docId} {
+      allow read, write: if request.auth != null;
+    }
+    match /career_coach_chats/{docId} {
+      allow read, write: if request.auth != null;
+      match /messages/{msgId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/firestore_helpers.dart';
 import '../../../core/services/cv_parser_service.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/models/cv_model.dart';
@@ -67,7 +67,7 @@ final recruiterAllApplicationsStreamProvider =
   final jobs = ref.watch(recruiterJobsStreamProvider).value ?? [];
   if (jobs.isEmpty) return Stream.value([]);
   final jobIds = jobs.map((j) => j.id).take(30).toList();
-  return FirebaseFirestore.instance
+  return appFirestore
       .collection('applications')
       .where('jobId', whereIn: jobIds)
       .snapshots()
@@ -179,7 +179,7 @@ final candidateCvProvider =
 final candidateProfileProvider =
     FutureProvider.autoDispose.family<UserModel?, String>(
         (ref, candidateId) async {
-  final doc = await FirebaseFirestore.instance
+  final doc = await appFirestore
       .collection('users')
       .doc(candidateId)
       .get();

@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/firestore_helpers.dart';
 import '../../../data/models/interview_model.dart';
 import '../../auth/data/auth_providers.dart';
 
-final _db = FirebaseFirestore.instance;
+final _db = appFirestore;
 
 final candidateInterviewsProvider =
     StreamProvider<List<InterviewModel>>((ref) {

@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/firestore_helpers.dart';
 import '../../../data/models/conversation_model.dart';
 import '../../../data/models/direct_message_model.dart';
 import '../../auth/data/auth_providers.dart';
 
-final _db = FirebaseFirestore.instance;
+final _db = appFirestore;
 
 // Deterministic conversation ID — always sorted so it's the same from both sides
 String buildConvId(String uid1, String uid2) {

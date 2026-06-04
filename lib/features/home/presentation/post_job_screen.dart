@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/firestore_helpers.dart';
 import '../../../data/models/job_model.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../job_listing/data/job_providers.dart';
@@ -153,9 +154,17 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final user = ref.read(firebaseUserProvider).value;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        _snackbar('Sign in as a recruiter to post a job.', AppColors.error),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      final user = ref.read(firebaseUserProvider).value!;
       final currentUser = ref.read(currentUserProvider).value;
       final repo = ref.read(jobRepositoryProvider);
 
@@ -194,13 +203,9 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       }
     } catch (e) {
       if (mounted) {
-        final msg = e.toString().contains('TimeoutException')
-            ? 'Request timed out — check your connection.'
-            : e.toString().contains('permission-denied')
-                ? 'Permission denied. Contact support.'
-                : 'Failed: ${e.toString().replaceFirst('Exception: ', '')}';
-        ScaffoldMessenger.of(context)
-            .showSnackBar(_snackbar(msg, AppColors.error));
+        ScaffoldMessenger.of(context).showSnackBar(
+          _snackbar('Failed: ${firestoreErrorMessage(e)}', AppColors.error),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

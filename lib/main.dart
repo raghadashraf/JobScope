@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
+import 'core/utils/firestore_helpers.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_strings.dart';
 import 'core/constants/app_colors.dart';
@@ -11,7 +12,11 @@ import 'core/utils/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // .env is optional for local runs when the file is missing.
+  }
   if (Firebase.apps.isEmpty) {
     try {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -27,6 +32,7 @@ void main() async {
       }
     }
   }
+  await configureFirestore();
   runApp(const ProviderScope(child: JobScopeApp()));
 }
 

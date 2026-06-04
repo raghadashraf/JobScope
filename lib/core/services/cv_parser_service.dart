@@ -3,13 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import '../../core/utils/firestore_helpers.dart';
 import '../../data/models/cv_model.dart';
 import 'ai_service.dart';
 
 const int _maxFileSizeBytes = 25 * 1024 * 1024; // 25 MB
 
 class CvParserService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = appFirestore;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final AiService _aiService = AiService();
 

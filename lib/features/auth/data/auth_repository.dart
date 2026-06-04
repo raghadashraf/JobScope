@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/utils/firestore_helpers.dart';
 import '../../../data/models/user_model.dart';
 
 // SharedPreferences key — stores the role string for the last signed-in UID.
@@ -12,7 +13,7 @@ const _kUidKey  = 'user_uid';
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = appFirestore;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   UserModel? _cachedUser;
@@ -100,11 +101,12 @@ class AuthRepository {
     //    already have everything needed to navigate and function. A background
     //    sync or next sign-in will restore the Firestore doc via signIn().
     try {
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .set(user.toMap())
-          .timeout(const Duration(seconds: 10));
+      await firestoreWrite(
+        _firestore
+            .collection('users')
+            .doc(user.uid)
+            .set(firestoreEncode(user.toMap())),
+      );
       await cred.user!.updateDisplayName(name);
     } catch (_) {
       // Non-fatal: auth account is created, local role is saved.
@@ -168,12 +170,12 @@ class AuthRepository {
     _cachedUser = user;
     await _saveRoleLocally(uid, resolvedRole);
     // Backfill Firestore in the background so future logins have a doc.
-    _firestore
-        .collection('users')
-        .doc(uid)
-        .set(user.toMap())
-        .timeout(const Duration(seconds: 10))
-        .ignore();
+    firestoreWrite(
+      _firestore
+          .collection('users')
+          .doc(uid)
+          .set(firestoreEncode(user.toMap())),
+    ).ignore();
     return user;
   }
 

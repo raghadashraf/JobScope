@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../data/models/job_model.dart';
+import '../../../data/models/training_session_model.dart';
+import '../../../data/models/user_model.dart';
 import '../data/job_providers.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../applications/data/application_providers.dart';
@@ -12,6 +15,8 @@ import '../../../core/services/share_service.dart';
 import 'widgets/cover_letter_sheet.dart';
 import 'widgets/match_badge_widget.dart';
 import 'widgets/match_reasons_sheet.dart';
+import 'widgets/train_before_apply_sheet.dart';
+import '../../ai_features/data/training_providers.dart';
 
 class JobDetailScreen extends ConsumerWidget {
   final JobModel job;
@@ -30,6 +35,15 @@ class JobDetailScreen extends ConsumerWidget {
 
     // Apply action state
     final applyState = ref.watch(applyNotifierProvider);
+
+    final currentUser = ref.watch(currentUserProvider).value;
+    final isCandidate = currentUser?.role == UserRole.candidate;
+    final trainingAsync = isCandidate
+        ? ref.watch(latestCompletedTrainingProvider(job.id))
+        : const AsyncValue<TrainingSessionModel?>.data(null);
+    final completedTraining = trainingAsync.value;
+    final trainingBlocksApply = completedTraining != null &&
+        !completedTraining.canApply;
 
     // AI match score (only shown when CV is uploaded)
     final matchAsync = ref.watch(jobMatchResultProvider(job.id));
@@ -382,8 +396,66 @@ class JobDetailScreen extends ConsumerWidget {
           color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            if (isCandidate && !hasApplied) ...[
+              if (completedTraining != null) ...[
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: (completedTraining.canApply
+                            ? AppColors.success
+                            : AppColors.warning)
+                        .withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: (completedTraining.canApply
+                              ? AppColors.success
+                              : AppColors.warning)
+                          .withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    completedTraining.canApply
+                        ? 'Training passed (${completedTraining.readinessScore}%) — ready to apply'
+                        : 'Training score ${completedTraining.readinessScore}% — need ${TrainingSessionModel.minReadinessToApply}%+ to apply',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: completedTraining.canApply
+                          ? AppColors.success
+                          : AppColors.warning,
+                    ),
+                  ),
+                ),
+              ],
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => showTrainBeforeApplySheet(context, job),
+                  icon: const Icon(Icons.school_rounded, size: 18),
+                  label: Text(
+                    AppStrings.trainBeforeApply,
+                    style: GoogleFonts.inter(
+                        fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.accent,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    side: const BorderSide(color: AppColors.accent),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Row(
+              children: [
             // Cover Letter button
             Expanded(
               child: OutlinedButton.icon(
@@ -411,7 +483,9 @@ class JobDetailScreen extends ConsumerWidget {
                   : ElevatedButton(
                       onPressed: applyState.status == ApplyStatus.loading
                           ? null
-                          : () => _showApplyConfirm(context, ref),
+                          : trainingBlocksApply
+                              ? () => _showTrainingRequired(context)
+                              : () => _showApplyConfirm(context, ref),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -437,6 +511,26 @@ class JobDetailScreen extends ConsumerWidget {
                     ),
             ),
           ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTrainingRequired(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Complete training with ${TrainingSessionModel.minReadinessToApply}%+ readiness to apply.',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: AppColors.warning,
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Train',
+          textColor: Colors.white,
+          onPressed: () => showTrainBeforeApplySheet(context, job),
         ),
       ),
     );
