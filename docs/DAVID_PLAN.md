@@ -28,8 +28,8 @@ This plan orders work by **dependency and impact**. Many D2 items already exist�
 | **P0** | D0-1 | Persist `matchScore` on apply | ✅ |
 | P1 | D2-polish | Apply flow gaps (see below) | ✅ |
 | **P2** | **D1** | Train-before-apply module | ✅ |
-| **P3** | **D3** | Notifications system | 🟡 inbox MVP done |
-| P4 | D4 | Settings + dark mode | ⬜ |
+| **P3** | **D3** | Notifications system | 🟡 inbox + FCM client; Function = phase 2 |
+| P4 | D4 | Settings + dark mode | ✅ |
 
 **Update this table** when you finish a slice.
 
@@ -185,7 +185,7 @@ Alternative: subcollection under `applications/{id}` after apply — **worse for
 
 ## P3 — D3: Notifications system
 
-**Status:** 🟡 Local only today
+**Status:** 🟡 Inbox MVP ✅; FCM client ✅; Cloud Function push = phase 2 ([FCM_CLOUD_FUNCTION.md](./FCM_CLOUD_FUNCTION.md))
 
 ### Already exists (extend only)
 
@@ -266,13 +266,14 @@ Layer B — Push / FCM (build later, D3-6)
 
 | Date | Issue | Fix |
 |------|-------|-----|
-| — | — | — |
+| 2026-06-05 | Web has no FCM token | Skip sync on `kIsWeb`; inbox still works |
+| 2026-06-05 | Push when app killed needs server | [FCM_CLOUD_FUNCTION.md](./FCM_CLOUD_FUNCTION.md) |
 
 ---
 
 ## P4 — D4: Settings + dark mode
 
-**Status:** ⬜
+**Status:** ✅
 
 ### Slices
 
@@ -286,14 +287,14 @@ Layer B — Push / FCM (build later, D3-6)
 
 ### Acceptance criteria (all 8 original tasks)
 
-- [ ] 1. Settings screen exists and navigates from Profile
-- [ ] 2. Dark mode toggle on settings
-- [ ] 3. Theme persists via SharedPreferences after restart
-- [ ] 4. Notification preferences toggle stored (wire to D3 when ready)
-- [ ] 5. About app screen/section
-- [ ] 6. Help/FAQ screen/section
-- [ ] 7. Privacy policy link opens
-- [ ] 8. Terms of service link opens
+- [x] 1. Settings screen exists and navigates from Profile
+- [x] 2. Dark mode toggle on settings
+- [x] 3. Theme persists via SharedPreferences after restart
+- [x] 4. Notification preferences toggle stored (gates local + FCM)
+- [x] 5. About app screen/section
+- [x] 6. Help/FAQ screen/section
+- [x] 7. Privacy policy link opens
+- [x] 8. Terms of service link opens
 
 ### Challenges log
 

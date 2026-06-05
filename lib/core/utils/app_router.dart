@@ -30,6 +30,10 @@ import '../../features/messaging/data/messaging_providers.dart';
 import '../../features/messaging/presentation/conversations_screen.dart';
 import '../../features/messaging/presentation/chat_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
+import '../../features/settings/presentation/about_screen.dart';
+import '../../features/settings/presentation/help_screen.dart';
+import '../../features/settings/presentation/legal_screen.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 
 // ─── Route paths ──────────────────────────────────────────────────────────────
 class AppRoutes {
@@ -56,7 +60,190 @@ class AppRoutes {
   static const conversations = '/conversations';
   static const chat = '/chat';
   static const notifications = '/notifications';
+  static const settings = '/settings';
+  static const about = '/about';
+  static const help = '/help';
+  static const privacy = '/privacy';
+  static const terms = '/terms';
 }
+
+/// Bump when adding/removing root [GoRoute]s so [routerProvider] recreates.
+const kRouterRoutesVersion = 2;
+
+final routerRoutesVersionProvider =
+    Provider<int>((_) => kRouterRoutesVersion);
+
+List<RouteBase> _buildRootRoutes() => [
+      GoRoute(
+        path: '/',
+        redirect: (_, _) => AppRoutes.onboarding,
+      ),
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (_, _) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.roleSelection,
+        builder: (_, _) => const RoleSelectionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (_, state) =>
+            LoginScreen(role: state.extra as String? ?? 'candidate'),
+      ),
+      GoRoute(
+        path: AppRoutes.register,
+        builder: (_, state) =>
+            SignupScreen(role: state.extra as String? ?? 'candidate'),
+      ),
+      GoRoute(
+        path: AppRoutes.candidateHome,
+        builder: (_, _) => const CandidateHomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.recruiterHome,
+        builder: (_, _) => const RecruiterHomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.jobDetail,
+        redirect: (_, state) {
+          if (state.extra is JobModel) return null;
+          final jobId = state.uri.queryParameters['jobId'];
+          if (jobId != null && jobId.isNotEmpty) return null;
+          return AppRoutes.jobs;
+        },
+        builder: (_, state) {
+          if (state.extra is JobModel) {
+            return JobDetailScreen(job: state.extra as JobModel);
+          }
+          final jobId = state.uri.queryParameters['jobId'];
+          if (jobId != null && jobId.isNotEmpty) {
+            return JobDeepLinkScreen(jobId: jobId);
+          }
+          return const JobsScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.applicationDetail,
+        redirect: (_, state) => state.extra is ApplicationModel
+            ? null
+            : AppRoutes.candidateHome,
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is! ApplicationModel) {
+            return const CandidateHomeScreen();
+          }
+          return ApplicationDetailScreen(application: extra);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.editProfile,
+        builder: (_, _) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.cv,
+        builder: (_, _) => const CvScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.postJob,
+        builder: (_, state) =>
+            PostJobScreen(jobToEdit: state.extra as JobModel?),
+      ),
+      GoRoute(
+        path: AppRoutes.jobApplicants,
+        redirect: (_, state) =>
+            state.extra is JobModel ? null : AppRoutes.recruiterHome,
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is! JobModel) return const RecruiterHomeScreen();
+          return JobApplicantsScreen(job: extra);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.applicantDetail,
+        redirect: (_, state) =>
+            state.extra is ApplicationModel ? null : AppRoutes.recruiterHome,
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is! ApplicationModel) {
+            return const RecruiterHomeScreen();
+          }
+          return ApplicantDetailScreen(application: extra);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.interviewTraining,
+        builder: (_, state) => InterviewTrainingScreen(
+            params: state.extra as InterviewParams?),
+      ),
+      GoRoute(
+        path: AppRoutes.skillAssessment,
+        builder: (_, _) => const SkillAssessmentScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.jobs,
+        builder: (_, _) => const JobsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.aiCvBuilder,
+        builder: (_, _) => const AiCvBuilderScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.careerCoach,
+        builder: (_, _) => const CareerCoachScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.jobDeepLink,
+        builder: (_, state) => JobDeepLinkScreen(
+          jobId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.candidateInterviews,
+        builder: (_, _) => const CandidateInterviewsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.conversations,
+        builder: (_, _) => const ConversationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.chat,
+        redirect: (_, state) =>
+            state.extra is ChatParams ? null : AppRoutes.conversations,
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is! ChatParams) {
+            return const ConversationsScreen();
+          }
+          return ChatScreen(params: extra);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (_, _) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (_, _) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.about,
+        builder: (_, _) => const AboutScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.help,
+        builder: (_, _) => const HelpScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.privacy,
+        builder: (_, _) =>
+            const LegalScreen(type: LegalDocumentType.privacy),
+      ),
+      GoRoute(
+        path: AppRoutes.terms,
+        builder: (_, _) => const LegalScreen(type: LegalDocumentType.terms),
+      ),
+    ];
 
 // ─── Auth guard notifier ──────────────────────────────────────────────────────
 class _RouterNotifier extends ChangeNotifier {
@@ -99,130 +286,12 @@ class _RouterNotifier extends ChangeNotifier {
 
 // ─── Router provider ──────────────────────────────────────────────────────────
 final routerProvider = Provider<GoRouter>((ref) {
+  ref.watch(routerRoutesVersionProvider);
   final notifier = _RouterNotifier(ref);
   return GoRouter(
     initialLocation: AppRoutes.onboarding,
     refreshListenable: notifier,
     redirect: notifier.redirect,
-    routes: [
-      GoRoute(
-        path: '/',
-        redirect: (_, _) => AppRoutes.onboarding,
-      ),
-      GoRoute(
-        path: AppRoutes.onboarding,
-        builder: (_, _) => const OnboardingScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.roleSelection,
-        builder: (_, _) => const RoleSelectionScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.login,
-        builder: (_, state) =>
-            LoginScreen(role: state.extra as String? ?? 'candidate'),
-      ),
-      GoRoute(
-        path: AppRoutes.register,
-        builder: (_, state) =>
-            SignupScreen(role: state.extra as String? ?? 'candidate'),
-      ),
-      GoRoute(
-        path: AppRoutes.candidateHome,
-        builder: (_, _) => const CandidateHomeScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.recruiterHome,
-        builder: (_, _) => const RecruiterHomeScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.jobDetail,
-        redirect: (_, state) =>
-            state.extra is JobModel ? null : AppRoutes.jobs,
-        builder: (_, state) =>
-            JobDetailScreen(job: state.extra as JobModel),
-      ),
-      GoRoute(
-        path: AppRoutes.applicationDetail,
-        redirect: (_, state) => state.extra is ApplicationModel
-            ? null
-            : AppRoutes.candidateHome,
-        builder: (_, state) => ApplicationDetailScreen(
-            application: state.extra as ApplicationModel),
-      ),
-      GoRoute(
-        path: AppRoutes.editProfile,
-        builder: (_, _) => const EditProfileScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.cv,
-        builder: (_, _) => const CvScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.postJob,
-        builder: (_, state) =>
-            PostJobScreen(jobToEdit: state.extra as JobModel?),
-      ),
-      GoRoute(
-        path: AppRoutes.jobApplicants,
-        redirect: (_, state) =>
-            state.extra is JobModel ? null : AppRoutes.recruiterHome,
-        builder: (_, state) =>
-            JobApplicantsScreen(job: state.extra as JobModel),
-      ),
-      GoRoute(
-        path: AppRoutes.applicantDetail,
-        redirect: (_, state) =>
-            state.extra is ApplicationModel ? null : AppRoutes.recruiterHome,
-        builder: (_, state) => ApplicantDetailScreen(
-            application: state.extra as ApplicationModel),
-      ),
-      GoRoute(
-        path: AppRoutes.interviewTraining,
-        builder: (_, state) => InterviewTrainingScreen(
-            params: state.extra as InterviewParams?),
-      ),
-      GoRoute(
-        path: AppRoutes.skillAssessment,
-        builder: (_, _) => const SkillAssessmentScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.jobs,
-        builder: (_, _) => const JobsScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.aiCvBuilder,
-        builder: (_, _) => const AiCvBuilderScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.careerCoach,
-        builder: (_, _) => const CareerCoachScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.jobDeepLink,
-        builder: (_, state) => JobDeepLinkScreen(
-          jobId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: AppRoutes.candidateInterviews,
-        builder: (_, _) => const CandidateInterviewsScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.conversations,
-        builder: (_, _) => const ConversationsScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.chat,
-        redirect: (_, state) =>
-            state.extra is ChatParams ? null : AppRoutes.conversations,
-        builder: (_, state) =>
-            ChatScreen(params: state.extra as ChatParams),
-      ),
-      GoRoute(
-        path: AppRoutes.notifications,
-        builder: (_, _) => const NotificationsScreen(),
-      ),
-    ],
+    routes: _buildRootRoutes(),
   );
 });

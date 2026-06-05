@@ -18,6 +18,9 @@ class ApplicationCardWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final liveAsync = ref.watch(applicationByIdProvider(application.id));
+    final app = liveAsync.value ?? application;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -53,8 +56,8 @@ class ApplicationCardWidget extends ConsumerWidget {
                   ),
                   child: Center(
                     child: Text(
-                      application.company.isNotEmpty
-                          ? application.company[0].toUpperCase()
+                      app.company.isNotEmpty
+                          ? app.company[0].toUpperCase()
                           : '?',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 18,
@@ -70,7 +73,7 @@ class ApplicationCardWidget extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        application.jobTitle,
+                        app.jobTitle,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -81,7 +84,7 @@ class ApplicationCardWidget extends ConsumerWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        application.company,
+                        app.company,
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -91,13 +94,13 @@ class ApplicationCardWidget extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          ApplicationStatusBadge(status: application.status),
+                          ApplicationStatusBadge(status: app.status),
                           const Spacer(),
                           Icon(Icons.access_time_rounded,
                               size: 11, color: AppColors.textTertiary),
                           const SizedBox(width: 3),
                           Text(
-                            _appliedAgo(application.appliedAt),
+                            _appliedAgo(app.appliedAt),
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               color: AppColors.textTertiary,
@@ -105,13 +108,13 @@ class ApplicationCardWidget extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      if (application.canWithdraw) ...[
+                      if (app.canWithdraw) ...[
                         const SizedBox(height: 10),
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
                             onPressed: () =>
-                                _confirmWithdraw(context, ref, application),
+                                _confirmWithdraw(context, ref, app),
                             icon: const Icon(Icons.undo_rounded, size: 16),
                             label: const Text('Withdraw'),
                             style: TextButton.styleFrom(
@@ -167,6 +170,13 @@ class ApplicationCardWidget extends ConsumerWidget {
                   SnackBar(
                     content: Text(error),
                     backgroundColor: AppColors.error,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Application withdrawn'),
+                    behavior: SnackBarBehavior.floating,
                   ),
                 );
               }

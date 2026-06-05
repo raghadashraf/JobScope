@@ -81,9 +81,31 @@ class AppNotificationModel {
       );
 
   static NotificationType _parseType(dynamic raw) {
-    final name = raw?.toString() ?? '';
+    final name = raw?.toString().trim() ?? '';
+    if (name.isEmpty) return NotificationType.applicationStatus;
+
+    final normalized = name
+        .replaceAll(RegExp(r'[\s-]+'), '_')
+        .toLowerCase();
+
+    const aliases = <String, NotificationType>{
+      'applicationstatus': NotificationType.applicationStatus,
+      'application_status': NotificationType.applicationStatus,
+      'status': NotificationType.applicationStatus,
+      'newapplication': NotificationType.newApplication,
+      'new_application': NotificationType.newApplication,
+      'newmessage': NotificationType.newMessage,
+      'new_message': NotificationType.newMessage,
+      'message': NotificationType.newMessage,
+      'newjob': NotificationType.newJob,
+      'new_job': NotificationType.newJob,
+      'job': NotificationType.newJob,
+    };
+    final alias = aliases[normalized];
+    if (alias != null) return alias;
+
     return NotificationType.values.firstWhere(
-      (e) => e.name == name,
+      (e) => e.name == name || e.name.toLowerCase() == normalized,
       orElse: () => NotificationType.applicationStatus,
     );
   }

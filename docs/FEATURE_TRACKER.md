@@ -35,8 +35,8 @@ Living log of shipped work. **Update this file at the end of every feature slice
 | D0 | David | Prerequisite fixes | ⬜ | [DAVID_PLAN.md](./DAVID_PLAN.md) |
 | D1 | David | AI training module | ✅ | [D1](#d1-ai-training-module) |
 | D2 | David | Apply flow + status | ✅ | [D2](#d2-apply-flow--acceptreject) |
-| D3 | David | Notifications (FCM) | 🟡 | [D3](#d3-notifications-system--fcm) |
-| D4 | David | Settings + dark mode | ⬜ | [D4](#d4-settings--dark-mode) |
+| D3 | David | Notifications (FCM) | ✅ | [D3](#d3-notifications-system--fcm) — inbox + client FCM; server push optional |
+| D4 | David | Settings + dark mode | ✅ | [D4](#d4-settings--dark-mode) |
 
 ---
 
@@ -290,30 +290,36 @@ Living log of shipped work. **Update this file at the end of every feature slice
 
 ### D3 — Notifications system — FCM (8 tasks)
 
-**Status:** 🟡 (~85% — inbox MVP done; Cloud Function push = phase 2)
+**Status:** ✅ Inbox + client FCM complete; server push optional — [FCM_CLOUD_FUNCTION.md](./FCM_CLOUD_FUNCTION.md)
 
 | # | Original task | Status | Notes |
 |---|---------------|--------|-------|
-| 1 | Setup Firebase Cloud Messaging | 🟡 | `notification_service.dart` + `fcmTokenSyncProvider` (mobile) |
-| 2 | Request notification permissions | 🟡 | FCM `requestPermission` on token sync |
-| 3 | Send push on status change | 🟡 | v1: Firestore inbox + `LocalNotificationService`; push = Function |
+| 1 | Setup Firebase Cloud Messaging | ✅ | Client: `fcmBootstrapProvider`, `fcm_background.dart`; server send = Function (optional) |
+| 2 | Request notification permissions | ✅ | `NotificationService.initialize()` on login (mobile) |
+| 3 | Send push on status change | ✅ | Inbox + local banner; FCM push when Function deployed |
 | 4 | Send push on new job match | ✅ | **Replaced:** recruiter inbox on new apply (TC-N1) |
-| 5 | Build in-app notification screen | ✅ | `notifications_screen.dart` + route |
-| 6 | Add notification badge with unread count | ✅ | Profile tile `_UnreadBadge` |
-| 7 | Implement mark as read/unread | ✅ | Tap = read; long-press = toggle unread |
+| 5 | Build in-app notification screen | ✅ | `notifications_screen.dart` + deep links |
+| 6 | Add notification badge with unread count | ✅ | Profile + dashboard/recruiter bell |
+| 7 | Implement mark as read/unread | ✅ | Tap, long-press, **Mark all read** |
 | 8 | Add delete notification feature | ✅ | Swipe to dismiss |
 
 **Firestore:** `users/{uid}/notifications/{id}`
 
-**Triggers:** apply → recruiter; `updateStatus` → candidate
+**Triggers:** apply → recruiter; `updateStatus` → candidate; `sendMessage` → recipient (TC-N5)
 
-**Tests:** [TEST_CASES.md](./TEST_CASES.md) TC-N1–N4
+**Tests:** [TEST_CASES.md](./TEST_CASES.md) TC-N1–N5
 
 #### Implementation log
 
+### D3 — FCM client + polish — 2026-06-05
+
+**Slices:** D3-5 mark-all-read; D3-6 token refresh + foreground handler; TC-N5 messages; nav/deep-link fixes.
+
+**Files:** `notification_service.dart`, `fcm_background.dart`, `notification_providers.dart` (`fcmBootstrapProvider`), `notification_repository.dart` (`markAllRead`), `main.dart`, `local_notification_service.dart`, `notification_navigation.dart`, `docs/FCM_CLOUD_FUNCTION.md`
+
 ### D3 — In-app inbox — 2026-06-05
 
-**Slices:** D3-1…D3-5 (+ partial D3-6 FCM token on `users/{uid}.fcmToken`).
+**Slices:** D3-1…D3-5.
 
 **Files:**
 - `lib/data/models/notification_model.dart`
@@ -328,24 +334,30 @@ Living log of shipped work. **Update this file at the end of every feature slice
 
 ### D4 — Settings + dark mode (8 tasks)
 
-**Status:** ⬜
+**Status:** ✅
 
-| # | Original task | Status | Plan slice |
-|---|---------------|--------|------------|
-| 1 | Build settings screen | ⬜ | D4-2 — `AppRoutes.settings` |
-| 2 | Add dark mode toggle | ⬜ | D4-2 |
-| 3 | Save dark mode to SharedPreferences | ⬜ | D4-1 — `settingsProvider` |
-| 4 | Add notification preferences | ⬜ | D4-1 — used by D3 |
-| 5 | Build About app screen | ⬜ | D4-4 — section or sub-screen |
-| 6 | Build Help/FAQ screen | ⬜ | D4-4 |
-| 7 | Add privacy policy link | ⬜ | D4-4 — `url_launcher` or WebView |
-| 8 | Add terms of service link | ⬜ | D4-4 |
+| # | Original task | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | Build settings screen | ✅ | `settings_screen.dart`, `AppRoutes.settings` |
+| 2 | Add dark mode toggle | ✅ | Switch on Settings |
+| 3 | Save dark mode to SharedPreferences | ✅ | `settingsProvider` / `themeModeProvider` → `main.dart` |
+| 4 | Add notification preferences | ✅ | Gates local + FCM; inbox unchanged |
+| 5 | Build About app screen | ✅ | `about_screen.dart` |
+| 6 | Build Help/FAQ screen | ✅ | `help_screen.dart` |
+| 7 | Add privacy policy link | ✅ | In-app text + **Open link** (`url_launcher`) |
+| 8 | Add terms of service link | ✅ | Same as privacy |
 
-**Note:** `AppTheme.darkTheme` exists; `main.dart` uses `ThemeMode.light`. Profile Settings/Notifications tiles are empty `onTap`.
+**Tests:** [TEST_CASES.md](./TEST_CASES.md) D4 table; `test/d4_settings_test.dart`
+
+**Note:** Many screens still use `AppColors.*` directly; Material `themeMode` applies to scaffold/theme widgets. Full dark polish = follow-up.
 
 #### Implementation log
 
-*Not started.*
+### D4 — Settings + dark mode — 2026-06-05
+
+**Slices:** D4-1…D4-5.
+
+**Files:** `lib/features/settings/data/settings_providers.dart`, `settings_screen.dart`, `about_screen.dart`, `help_screen.dart`, `legal_screen.dart`, `settings_scaffold.dart`, `main.dart`, `app_router.dart`, `profile_screen.dart`, `notification_providers.dart` (pref gate), `candidate_home_screen.dart`
 
 ---
 

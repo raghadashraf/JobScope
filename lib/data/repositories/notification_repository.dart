@@ -55,6 +55,18 @@ class NotificationRepository {
     await firestoreWrite(_inbox(userId).doc(notificationId).delete());
   }
 
+  Future<void> markAllRead(String userId) async {
+    final snap =
+        await _inbox(userId).where('read', isEqualTo: false).get();
+    if (snap.docs.isEmpty) return;
+
+    final batch = _firestore.batch();
+    for (final doc in snap.docs) {
+      batch.update(doc.reference, {'read': true});
+    }
+    await firestoreWrite(batch.commit());
+  }
+
   Future<void> notifyRecruiterNewApplication({
     required JobModel job,
     required ApplicationModel application,

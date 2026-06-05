@@ -51,6 +51,33 @@ class LocalNotificationService {
     );
   }
 
+  Future<void> showInboxAlert({
+    required String title,
+    required String body,
+  }) async {
+    if (body.isEmpty) return;
+    await _plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'inbox_notifications',
+          'Inbox',
+          channelDescription: 'JobScope inbox and push alerts',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
+  }
+
   Future<void> showInterviewConfirmed({
     required String jobTitle,
     required String company,

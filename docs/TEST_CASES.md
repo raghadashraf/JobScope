@@ -150,9 +150,18 @@ flutter test test/d2_apply_flow_test.dart
 
 | Step | Actor | Action | Expected |
 |------|-------|--------|----------|
-| 1 | C | Open notifications with 2+ unread | Badge on Profile shows count |
-| 2 | C | Mark one read | Badge decreases; Firestore `read: true` |
-| 3 | C | Delete one | Removed from list and Firestore |
+| 1 | C | Open notifications with 2+ unread | Badge on Profile **and** dashboard bell shows count |
+| 2 | C | Tap **Mark all read** | All `read: true`; badge clears |
+| 3 | C | Mark one unread (long-press) then tap | Single item marked read |
+| 4 | C | Swipe delete one | Removed from list and Firestore |
+
+### TC-N5 — New message inbox
+
+| Step | Actor | Action | Expected |
+|------|-------|--------|----------|
+| 1 | R | Open applicant → **Message** → send text | Message in `conversations` |
+| 2 | C | Profile → **Notifications** | Item `type: newMessage`, tap opens chat |
+| 3 | — | Firestore `users/{C_uid}/notifications` | `conversationId`, `otherUserId` set |
 
 ### TC-N4 — No false positives
 
@@ -161,7 +170,9 @@ flutter test test/d2_apply_flow_test.dart
 | 1 | C | Only browse jobs, do not apply | No “new application” notification for C |
 | 2 | R | Edit job title only | C does not get spurious status notification (unless you designed for it) |
 
-**FCM (D3-6, later):** Same TC-N1/N2 with app **killed** on device — only passes after Cloud Function sends push; document skip if not deployed.
+**FCM (D3-6, phase 2):** Same TC-N1/N2/N5 with app **killed** on a **physical device** — only after [FCM_CLOUD_FUNCTION.md](./FCM_CLOUD_FUNCTION.md) is deployed. Web/Chrome: inbox only (no FCM token).
+
+**Client FCM (now):** On Android/iOS, `users/{uid}.fcmToken` should appear after login; foreground push shows local banner via `fcmListenersProvider`.
 
 **Automated:**
 
@@ -189,7 +200,21 @@ flutter test test/d3_notifications_test.dart
 | 2 | C | Toggle **Dark mode** | UI switches immediately |
 | 3 | C | Hot restart / reopen app | Dark mode persists |
 | 4 | C | Toggle off | Light mode persists |
-| 5 | C | Notification preference toggle (if present) | Value in SharedPreferences; inbox respects opt-out when implemented |
+| 5 | C | Turn off **Push & local alerts** | No OS banner on status change; inbox still works |
+| 6 | C | Settings → Privacy / Terms → **Open link** | Browser opens (or snackbar if URL unavailable) |
+
+**Automated:**
+
+```bash
+flutter test test/d4_settings_test.dart
+```
+
+### D4 — Test record — 2026-06-05
+
+| Case | Type | Result | Notes |
+|------|------|--------|-------|
+| D4 manual | Manual | ⬜ Pending | Steps 1–6 above |
+| Automated | `flutter test` | ✅ Pass | `test/d4_settings_test.dart` |
 
 ---
 
