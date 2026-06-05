@@ -20,6 +20,21 @@ void main() {
       expect(n.relatedId, 'app123');
     });
 
+    test('parses legacy snake_case notification types', () {
+      expect(
+        AppNotificationModel.fromMap({'type': 'new_message'}).type,
+        NotificationType.newMessage,
+      );
+      expect(
+        AppNotificationModel.fromMap({'type': 'application_status'}).type,
+        NotificationType.applicationStatus,
+      );
+      expect(
+        AppNotificationModel.fromMap({'type': 'new_job'}).type,
+        NotificationType.newJob,
+      );
+    });
+
     test('status notification types exclude pending/withdrawn at repo contract', () {
       expect(ApplicationStatus.pending.name, 'pending');
       expect(ApplicationStatus.withdrawn.name, 'withdrawn');
