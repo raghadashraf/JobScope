@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../data/cv_providers.dart';
 import '../../../data/models/cv_model.dart';
@@ -199,68 +200,133 @@ class _CvContent extends StatelessWidget {
         _ProfileStrengthCard(strength: cv.profileStrength),
         const SizedBox(height: 20),
 
-        // File info
+        // File info + actions
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.description_rounded,
-                    color: AppColors.primary, size: 20),
+              // File name row
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.picture_as_pdf_rounded, size: 20,
+                        color: Color(0xFF0A66C2)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(cv.fileName,
+                            style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                        Text(
+                            'Uploaded ${_formatDate(cv.uploadedAt)}',
+                            style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppColors.textTertiary)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 14),
+              if (isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 4),
+                    child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.primary)),
+                  ),
+                )
+              else
+                Row(
                   children: [
-                    Text(cv.fileName,
-                        style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    Text(
-                        'Uploaded ${_formatDate(cv.uploadedAt)}',
-                        style: GoogleFonts.inter(
-                            fontSize: 12, color: AppColors.textTertiary)),
+                    // View PDF
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: () =>
+                            Share.shareUri(Uri.parse(cv.fileUrl)),
+                        icon: const Icon(Icons.open_in_new_rounded,
+                            size: 16),
+                        label: const Text('View PDF'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 11),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          textStyle: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Replace
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onReplace,
+                        icon: const Icon(
+                            Icons.upload_file_rounded,
+                            size: 15),
+                        label: const Text('Replace'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          side: const BorderSide(
+                              color: Color(0xFFE2E8F0)),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 11),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          textStyle: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Delete
+                    OutlinedButton(
+                      onPressed: onDelete,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: BorderSide(
+                            color: AppColors.error
+                                .withValues(alpha: 0.4)),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 11, horizontal: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18),
+                    ),
                   ],
                 ),
-              ),
-              if (!isLoading) ...[
-                _UploadButton(
-                    onTap: onReplace,
-                    isLoading: false,
-                    isCompact: true,
-                    label: 'Replace'),
-                const SizedBox(width: 6),
-                IconButton(
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline_rounded,
-                      color: AppColors.error, size: 20),
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.error.withValues(alpha: 0.08),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                  tooltip: 'Delete CV',
-                ),
-              ] else
-                const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
             ],
           ),
         ),
@@ -557,14 +623,10 @@ class _EducationCard extends StatelessWidget {
 class _UploadButton extends StatelessWidget {
   final VoidCallback onTap;
   final bool isLoading;
-  final bool isCompact;
-  final String label;
 
   const _UploadButton({
     required this.onTap,
     required this.isLoading,
-    this.isCompact = false,
-    this.label = 'Upload CV',
   });
 
   @override
@@ -575,20 +637,17 @@ class _UploadButton extends StatelessWidget {
     }
     return ElevatedButton.icon(
       onPressed: onTap,
-      icon: Icon(Icons.upload_file_rounded,
-          size: isCompact ? 14 : 18),
-      label: Text(label),
+      icon: const Icon(Icons.upload_file_rounded, size: 18),
+      label: const Text('Upload CV'),
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        padding: isCompact
-            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
-            : const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(isCompact ? 10 : 14)),
+            borderRadius: BorderRadius.circular(14)),
         textStyle: GoogleFonts.inter(
-            fontSize: isCompact ? 12 : 14, fontWeight: FontWeight.w600),
+            fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }

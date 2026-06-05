@@ -40,15 +40,6 @@ class RoleSelectionScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 28),
 
-                      // Logo
-                      Image.asset(
-                        'assets/images/logo.png',
-                        height: 56,
-                        fit: BoxFit.contain,
-                        alignment: Alignment.centerLeft,
-                      ),
-                      const SizedBox(height: 20),
-
                       // Header
                       Text(
                         'What brings\nyou here?',

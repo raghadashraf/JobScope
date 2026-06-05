@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_router.dart';
+import '../data/nav_providers.dart';
 import '../../messaging/data/messaging_providers.dart';
 import '../../recruiter/data/interview_providers.dart';
 import '../../../data/models/application_model.dart';
@@ -115,8 +116,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             child: Center(
                               child: userAsync.when(
                                 data: (user) => Text(
-                                  (user?.name.isNotEmpty == true)
-                                      ? user!.name[0].toUpperCase()
+                                  (user?.displayName.isNotEmpty == true)
+                                      ? user!.displayName[0].toUpperCase()
                                       : '?',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 20,
@@ -149,7 +150,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                 const SizedBox(height: 2),
                                 userAsync.when(
                                   data: (user) => Text(
-                                    user?.name ?? 'Welcome back',
+                                    user?.displayName ?? 'Welcome back',
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
@@ -181,7 +182,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                               ],
                             ),
                           ),
-                          _notificationBell(),
+                          _headerIcons(),
                         ],
                       ),
                     ),
@@ -222,7 +223,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                   icon: Icons.work_rounded,
                                   label: 'Job Matches',
                                   value: '–',
-                                  color: AppColors.primary)),
+                                  color: AppColors.primary,
+                                  onTap: () => ref
+                                      .read(candidateTabProvider.notifier)
+                                      .setTab(1))),
                           const SizedBox(width: 12),
                           Expanded(
                               child: _statCard(
@@ -230,7 +234,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                   label: 'Applied',
                                   value: '$appliedCount',
                                   color: AppColors.secondary,
-                                  count: appliedCount)),
+                                  count: appliedCount,
+                                  onTap: () => ref
+                                      .read(candidateTabProvider.notifier)
+                                      .setTab(2))),
                           const SizedBox(width: 12),
                           Expanded(
                               child: _statCard(
@@ -238,7 +245,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                   label: 'Shortlisted',
                                   value: '$shortlistedCount',
                                   color: AppColors.success,
-                                  count: shortlistedCount)),
+                                  count: shortlistedCount,
+                                  onTap: () => ref
+                                      .read(candidateTabProvider.notifier)
+                                      .setTab(2))),
                         ],
                       ),
                     ),
@@ -299,27 +309,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             iconColor: AppColors.secondary,
                             title: 'Browse Jobs',
                             subtitle: 'Find your perfect match',
-                            onTap: () => context.push(AppRoutes.jobs),
-                          ),
-                          const SizedBox(height: 12),
-                          _actionTileWithBadge(
-                            icon: Icons.calendar_month_rounded,
-                            iconColor: const Color(0xFF0891B2),
-                            title: 'My Interviews',
-                            subtitle: 'View and confirm interview slots',
-                            badge: ref.watch(pendingInterviewsCountProvider),
-                            onTap: () =>
-                                context.push(AppRoutes.candidateInterviews),
-                          ),
-                          const SizedBox(height: 12),
-                          _actionTileWithBadge(
-                            icon: Icons.chat_bubble_outline_rounded,
-                            iconColor: const Color(0xFF7C3AED),
-                            title: 'Messages',
-                            subtitle: 'Chat with recruiters',
-                            badge: ref.watch(totalUnreadProvider),
-                            onTap: () =>
-                                context.push(AppRoutes.conversations),
+                            onTap: () => ref
+                                .read(candidateTabProvider.notifier)
+                                .setTab(1),
                           ),
                           const SizedBox(height: 12),
                           _actionTile(
@@ -363,43 +355,76 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return 'Good evening 👋';
   }
 
-  Widget _notificationBell() {
-    final unread = ref.watch(unreadNotificationsCountProvider).value ?? 0;
+  Widget _headerIcons() {
+    final unreadMsgs = ref.watch(totalUnreadProvider);
+    final pendingInterviews = ref.watch(pendingInterviewsCountProvider);
+    final unreadNotifs =
+        ref.watch(unreadNotificationsCountProvider).value ?? 0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _topBarIcon(
+          icon: Icons.calendar_month_rounded,
+          badge: pendingInterviews,
+          onTap: () => context.push(AppRoutes.candidateInterviews),
+        ),
+        const SizedBox(width: 8),
+        _topBarIcon(
+          icon: Icons.chat_bubble_outline_rounded,
+          badge: unreadMsgs,
+          onTap: () => context.push(AppRoutes.conversations),
+        ),
+        const SizedBox(width: 8),
+        _topBarIcon(
+          icon: Icons.notifications_outlined,
+          badge: unreadNotifs,
+          onTap: () => context.push(AppRoutes.notifications),
+        ),
+      ],
+    );
+  }
+
+  Widget _topBarIcon({
+    required IconData icon,
+    required int badge,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
-      onTap: () => context.push(AppRoutes.notifications),
+      onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: Icon(Icons.notifications_outlined,
-                color: AppColors.textPrimary),
+            child: Icon(icon, color: AppColors.textPrimary, size: 20),
           ),
-          if (unread > 0)
+          if (badge > 0)
             Positioned(
-              right: -2,
-              top: -2,
+              right: -3,
+              top: -3,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                padding: const EdgeInsets.all(3),
+                constraints:
+                    const BoxConstraints(minWidth: 16, minHeight: 16),
                 decoration: BoxDecoration(
                   color: AppColors.error,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.surface, width: 2),
+                  shape: BoxShape.circle,
+                  border:
+                      Border.all(color: AppColors.surface, width: 1.5),
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  unread > 99 ? '99+' : '$unread',
+                  badge > 9 ? '9+' : '$badge',
                   style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
                 ),
@@ -617,13 +642,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     required String value,
     required Color color,
     int? count,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+            color: onTap != null
+                ? color.withValues(alpha: 0.25)
+                : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -660,9 +691,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   fontSize: 10,
                   color: AppColors.textSecondary,
                   letterSpacing: 0.1)),
+          if (onTap != null) ...[
+            const SizedBox(height: 6),
+            Row(children: [
+              Text('View',
+                  style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: color)),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  size: 8, color: color),
+            ]),
+          ],
         ],
       ),
-    );
+    ),   // Container
+    );   // GestureDetector
   }
 
   Widget _actionTile({
@@ -735,89 +779,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         ],
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: AppColors.textSecondary)),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios_rounded,
-                  size: 14, color: AppColors.textTertiary),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _actionTileWithBadge({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required int badge,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: iconColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: Icon(icon, color: iconColor, size: 22),
-                  ),
-                  if (badge > 0)
-                    Positioned(
-                      top: -4,
-                      right: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.error,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          badge > 9 ? '9+' : '$badge',
-                          style: GoogleFonts.inter(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary)),
                     const SizedBox(height: 2),
                     Text(subtitle,
                         style: GoogleFonts.inter(

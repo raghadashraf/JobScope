@@ -26,6 +26,7 @@ import '../../features/job_listing/presentation/job_deep_link_screen.dart';
 import '../../features/recruiter/presentation/applicant_detail_screen.dart';
 import '../../features/recruiter/presentation/job_applicants_screen.dart';
 import '../../features/home/presentation/candidate_interviews_screen.dart';
+import '../../features/recruiter/presentation/recruiter_interviews_screen.dart';
 import '../../features/messaging/data/messaging_providers.dart';
 import '../../features/messaging/presentation/conversations_screen.dart';
 import '../../features/messaging/presentation/chat_screen.dart';
@@ -57,6 +58,7 @@ class AppRoutes {
   static const careerCoach = '/career-coach';
   static const jobDeepLink = '/jobs/:id';
   static const candidateInterviews = '/candidate-interviews';
+  static const recruiterInterviews = '/recruiter-interviews';
   static const conversations = '/conversations';
   static const chat = '/chat';
   static const notifications = '/notifications';
@@ -201,6 +203,10 @@ List<RouteBase> _buildRootRoutes() => [
       GoRoute(
         path: AppRoutes.candidateInterviews,
         builder: (_, _) => const CandidateInterviewsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.recruiterInterviews,
+        builder: (_, _) => const RecruiterInterviewsScreen(),
       ),
       GoRoute(
         path: AppRoutes.conversations,

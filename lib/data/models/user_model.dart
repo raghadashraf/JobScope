@@ -33,6 +33,12 @@ class UserModel {
     required this.createdAt,
   });
 
+  /// First letter capitalised, rest unchanged — safe for display everywhere.
+  String get displayName {
+    if (name.isEmpty) return name;
+    return name[0].toUpperCase() + name.substring(1);
+  }
+
   Map<String, dynamic> toMap() => {
         'uid': uid,
         'email': email,

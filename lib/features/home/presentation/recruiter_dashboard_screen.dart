@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_router.dart';
 import '../../messaging/data/messaging_providers.dart';
+import '../../../data/models/interview_model.dart';
+import '../../recruiter/data/interview_providers.dart';
 import '../../../data/models/application_model.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../../auth/data/auth_providers.dart';
@@ -115,8 +117,8 @@ class _RecruiterDashboardScreenState
                             child: Center(
                               child: userAsync.when(
                                 data: (user) => Text(
-                                  (user?.name.isNotEmpty == true)
-                                      ? user!.name[0].toUpperCase()
+                                  (user?.displayName.isNotEmpty == true)
+                                      ? user!.displayName[0].toUpperCase()
                                       : '?',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 20,
@@ -148,7 +150,7 @@ class _RecruiterDashboardScreenState
                                 const SizedBox(height: 2),
                                 userAsync.when(
                                   data: (user) => Text(
-                                    user?.name ?? 'Recruiter',
+                                    user?.displayName ?? 'Recruiter',
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
@@ -198,13 +200,41 @@ class _RecruiterDashboardScreenState
                               ],
                             ),
                           ),
-                          _NotificationBellButton(
-                            unreadCount: ref
-                                    .watch(unreadNotificationsCountProvider)
-                                    .value ??
-                                0,
-                            onTap: () =>
-                                context.push(AppRoutes.notifications),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _TopBarIcon(
+                                icon: Icons.calendar_month_rounded,
+                                badge: ref
+                                    .watch(recruiterInterviewsProvider)
+                                    .value
+                                    ?.where((i) =>
+                                        i.status ==
+                                        InterviewStatus.proposed)
+                                    .length ?? 0,
+                                onTap: () => context
+                                    .push(AppRoutes.recruiterInterviews),
+                              ),
+                              const SizedBox(width: 8),
+                              _TopBarIcon(
+                                icon: Icons.chat_bubble_outline_rounded,
+                                badge:
+                                    ref.watch(totalUnreadProvider),
+                                onTap: () => context
+                                    .push(AppRoutes.conversations),
+                              ),
+                              const SizedBox(width: 8),
+                              _TopBarIcon(
+                                icon: Icons.notifications_outlined,
+                                badge: ref
+                                        .watch(
+                                            unreadNotificationsCountProvider)
+                                        .value ??
+                                    0,
+                                onTap: () => context
+                                    .push(AppRoutes.notifications),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -584,12 +614,14 @@ class _RecruiterDashboardScreenState
       );
 }
 
-class _NotificationBellButton extends StatelessWidget {
-  final int unreadCount;
+class _TopBarIcon extends StatelessWidget {
+  final IconData icon;
+  final int badge;
   final VoidCallback onTap;
 
-  const _NotificationBellButton({
-    required this.unreadCount,
+  const _TopBarIcon({
+    required this.icon,
+    required this.badge,
     required this.onTap,
   });
 
@@ -602,35 +634,34 @@ class _NotificationBellButton extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: Icon(Icons.notifications_outlined,
-                color: AppColors.textPrimary),
+            child: Icon(icon, color: AppColors.textPrimary, size: 20),
           ),
-          if (unreadCount > 0)
+          if (badge > 0)
             Positioned(
-              right: -2,
-              top: -2,
+              right: -3,
+              top: -3,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                padding: const EdgeInsets.all(3),
+                constraints:
+                    const BoxConstraints(minWidth: 16, minHeight: 16),
                 decoration: BoxDecoration(
                   color: AppColors.error,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.surface, width: 2),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.surface, width: 1.5),
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  unreadCount > 99 ? '99+' : '$unreadCount',
+                  badge > 9 ? '9+' : '$badge',
                   style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
                 ),

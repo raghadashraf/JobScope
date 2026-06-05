@@ -23,6 +23,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final _passFocus = FocusNode();
   bool _obscure = true;
   bool _isLoading = false;
 
@@ -51,6 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
+    _passFocus.dispose();
     _animCtrl.dispose();
     super.dispose();
   }
@@ -159,32 +161,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             GestureDetector(
                               onTap: () => Navigator.pop(context),
                               child: Container(
-                                width: 40, height: 40,
+                                width: 42, height: 42,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white.withValues(alpha: 0.22),
+                                  shape: BoxShape.circle,
                                   border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.25)),
+                                      color: Colors.white.withValues(alpha: 0.35),
+                                      width: 1.2),
                                 ),
-                                child: const Icon(Icons.arrow_back_ios_new_rounded,
-                                    size: 16, color: Colors.white),
+                                child: const Icon(Icons.arrow_back_rounded,
+                                    size: 20, color: Colors.white),
                               ),
                             ),
                             const Spacer(),
                             Container(
-                              width: 64, height: 64,
+                              width: 88, height: 88,
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.18),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 6),
+                                    color: Colors.black.withValues(alpha: 0.20),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                  BoxShadow(
+                                    color: _roleColor.withValues(alpha: 0.18),
+                                    blurRadius: 32,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(10),
                               child: Image.asset('assets/images/logo.png',
                                   fit: BoxFit.contain),
                             ),
@@ -256,6 +264,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 hint: 'name@company.com',
                                 icon: Icons.mail_outline_rounded,
                                 keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                onSubmitted: () => FocusScope.of(context)
+                                    .requestFocus(_passFocus),
                                 validator: (v) {
                                   if (v == null || v.isEmpty) {
                                     return 'Email is required';
@@ -274,6 +285,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 hint: 'Enter your password',
                                 icon: Icons.lock_outline_rounded,
                                 obscure: _obscure,
+                                focusNode: _passFocus,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: _handleLogin,
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscure
@@ -378,12 +392,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     TextInputType? keyboardType,
     bool obscure = false,
     Widget? suffixIcon,
+    FocusNode? focusNode,
+    TextInputAction? textInputAction,
+    VoidCallback? onSubmitted,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscure,
+      focusNode: focusNode,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onSubmitted != null ? (_) => onSubmitted() : null,
       style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
       decoration: InputDecoration(
         hintText: hint,

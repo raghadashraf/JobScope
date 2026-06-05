@@ -364,25 +364,25 @@ class _LogoBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 120,
-      height: 120,
+      width: 156,
+      height: 156,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(36),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.30),
-            blurRadius: 36,
-            offset: const Offset(0, 14),
+            color: Colors.black.withValues(alpha: 0.32),
+            blurRadius: 48,
+            offset: const Offset(0, 18),
           ),
           BoxShadow(
-            color: const Color(0xFF0A66C2).withValues(alpha: 0.22),
-            blurRadius: 44,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF0A66C2).withValues(alpha: 0.28),
+            blurRadius: 56,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       child: Image.asset(
         'assets/images/logo.png',
         fit: BoxFit.contain,

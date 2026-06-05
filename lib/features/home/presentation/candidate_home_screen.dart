@@ -6,6 +6,7 @@ import '../../../core/services/local_notification_service.dart';
 import '../../../core/utils/app_router.dart';
 import '../../../data/models/application_model.dart';
 import '../../applications/data/application_providers.dart';
+import '../data/nav_providers.dart';
 import 'dashboard_screen.dart';
 import '../../job_listing/presentation/jobs_screen.dart';
 import '../../applications/presentation/applications_screen.dart';
@@ -77,11 +78,22 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
     _iconCtrls[_currentIndex].reverse();
     setState(() => _currentIndex = i);
     _iconCtrls[i].forward();
+    ref.read(candidateTabProvider.notifier).setTab(i);
+  }
+
+  void _switchTab(int i) {
+    if (i == _currentIndex) return;
+    _iconCtrls[_currentIndex].reverse();
+    setState(() => _currentIndex = i);
+    _iconCtrls[i].forward();
   }
 
   @override
   Widget build(BuildContext context) {
     ref.watch(fcmBootstrapProvider);
+
+    // Allow any screen to switch tabs by writing to candidateTabProvider
+    ref.listen<int>(candidateTabProvider, (_, next) => _switchTab(next));
 
     ref.listen<AsyncValue<List<ApplicationModel>>>(myApplicationsProvider,
         (_, next) {
