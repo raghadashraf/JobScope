@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/firestore_helpers.dart';
-import '../../../core/services/cv_parser_service.dart';
+import '../../cv_management/data/cv_providers.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/models/cv_model.dart';
 import '../../../data/models/job_model.dart';
@@ -97,9 +97,11 @@ final recruiterStatsProvider = Provider<RecruiterStats>((ref) {
   final jobs = ref.watch(recruiterJobsStreamProvider).value ?? [];
   final apps =
       ref.watch(recruiterAllApplicationsStreamProvider).value ?? [];
+  final visibleJobs = jobs.where((j) => !j.isDeleted).toList();
   return RecruiterStats(
-    activeJobs: jobs.where((j) => j.isActive).length,
-    totalApplicants: apps.length,
+    activeJobs: visibleJobs.where((j) => j.isActive).length,
+    totalApplicants:
+        apps.where((a) => a.countsTowardJobApplicantTotal).length,
     shortlisted:
         apps.where((a) => a.status == ApplicationStatus.shortlisted).length,
   );
@@ -162,9 +164,11 @@ final recruiterAnalyticsProvider = Provider<RecruiterAnalytics>((ref) {
     ..sort((a, b) => b.appliedAt.compareTo(a.appliedAt));
   final recentActivity = sorted.take(8).toList();
 
+  final visibleJobs = jobs.where((j) => !j.isDeleted).toList();
   return RecruiterAnalytics(
-    totalApplicants: apps.length,
-    activeJobs: jobs.where((j) => j.isActive).length,
+    totalApplicants:
+        apps.where((a) => a.countsTowardJobApplicantTotal).length,
+    activeJobs: visibleJobs.where((j) => j.isActive).length,
     acceptanceRate: acceptanceRate,
     averageMatchScore: averageMatchScore,
     topSkills: top5,
@@ -175,8 +179,15 @@ final recruiterAnalyticsProvider = Provider<RecruiterAnalytics>((ref) {
 
 final candidateCvProvider =
     FutureProvider.autoDispose.family<CvModel?, String>((ref, candidateId) async {
-  final service = CvParserService();
-  return service.getCv(candidateId);
+  return ref.read(cvParserServiceProvider).getCv(candidateId);
+});
+
+/// CV snapshot attached to a specific application (by cvId when available).
+final candidateCvForApplicationProvider = FutureProvider.autoDispose
+    .family<CvModel?, ApplicationModel>((ref, app) async {
+  return ref
+      .read(cvParserServiceProvider)
+      .getCv(app.candidateId, cvId: app.cvId);
 });
 
 final candidateProfileProvider =

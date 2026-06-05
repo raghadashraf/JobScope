@@ -18,6 +18,7 @@ class RecruiterJobsScreen extends ConsumerWidget {
 
     final countByJob = <String, int>{};
     for (final app in allApps) {
+      if (!app.countsTowardJobApplicantTotal) continue;
       countByJob[app.jobId] = (countByJob[app.jobId] ?? 0) + 1;
     }
 
@@ -44,9 +45,12 @@ class RecruiterJobsScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   jobsAsync.when(
                     data: (jobs) {
-                      final active = jobs.where((j) => j.isActive).length;
+                      final visible =
+                          jobs.where((j) => !j.isDeleted).toList();
+                      final active =
+                          visible.where((j) => j.isActive).length;
                       return Text(
-                        '$active active · ${jobs.length} total',
+                        '$active active · ${visible.length} total',
                         style: GoogleFonts.inter(
                             fontSize: 14, color: AppColors.textSecondary),
                       );
@@ -62,23 +66,31 @@ class RecruiterJobsScreen extends ConsumerWidget {
             // ── List ─────────────────────────────────────────────────────
             Expanded(
               child: jobsAsync.when(
-                data: (jobs) => jobs.isEmpty
+                data: (jobs) {
+                  final visible =
+                      jobs.where((j) => !j.isDeleted).toList();
+                  return visible.isEmpty
                     ? _EmptyState()
                     : ListView.builder(
                         padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                        itemCount: jobs.length,
+                        itemCount: visible.length,
                         itemBuilder: (_, i) => _JobCard(
-                          job: jobs[i],
-                          applicantCount: countByJob[jobs[i].id] ?? 0,
+                          job: visible[i],
+                          applicantCount: countByJob[visible[i].id] ?? 0,
                           onTap: () => context.push(
-                              AppRoutes.jobApplicants, extra: jobs[i]),
+                              AppRoutes.jobApplicants, extra: visible[i]),
                           onEdit: () => context.push(
-                              AppRoutes.postJob, extra: jobs[i]),
-                          onToggleActive: () => jobs[i].isActive
-                              ? _confirmDeactivate(context, ref, jobs[i].id)
-                              : _reactivate(context, ref, jobs[i]),
+                              AppRoutes.postJob, extra: visible[i]),
+                          onToggleActive: () => visible[i].isActive
+                              ? _confirmDeactivate(context, ref, visible[i].id)
+                              : _reactivate(context, ref, visible[i]),
+                          onDelete: !visible[i].isActive
+                              ? () => _confirmDelete(
+                                  context, ref, visible[i].id)
+                              : null,
                         ),
-                      ),
+                      );
+                },
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
@@ -131,6 +143,59 @@ class RecruiterJobsScreen extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       await ref.read(jobRepositoryProvider).deactivateJob(jobId);
+    }
+  }
+
+  Future<void> _confirmDelete(
+      BuildContext context, WidgetRef ref, String jobId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Delete Job?',
+            style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w700, fontSize: 18)),
+        content: Text(
+          'This removes the listing from your dashboard. Application data is kept in the database.',
+          style: GoogleFonts.inter(
+              fontSize: 14, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text('Delete',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await ref.read(jobRepositoryProvider).softDeleteJob(jobId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Job removed from your list',
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
     }
   }
 
@@ -219,6 +284,7 @@ class _JobCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onToggleActive;
+  final VoidCallback? onDelete;
 
   const _JobCard({
     required this.job,
@@ -226,6 +292,7 @@ class _JobCard extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onToggleActive,
+    this.onDelete,
   });
 
   @override
@@ -305,8 +372,16 @@ class _JobCard extends StatelessWidget {
                   ),
                 ),
                 PopupMenuButton<_Action>(
-                  onSelected: (a) =>
-                      a == _Action.edit ? onEdit() : onToggleActive(),
+                  onSelected: (a) {
+                    switch (a) {
+                      case _Action.edit:
+                        onEdit();
+                      case _Action.toggle:
+                        onToggleActive();
+                      case _Action.delete:
+                        onDelete?.call();
+                    }
+                  },
                   icon: Icon(Icons.more_vert_rounded,
                       size: 20, color: AppColors.textTertiary),
                   shape: RoundedRectangleBorder(
@@ -345,6 +420,18 @@ class _JobCard extends StatelessWidget {
                         ),
                       ]),
                     ),
+                    if (onDelete != null)
+                      PopupMenuItem(
+                        value: _Action.delete,
+                        child: Row(children: [
+                          Icon(Icons.delete_outline_rounded,
+                              size: 16, color: AppColors.error),
+                          const SizedBox(width: 10),
+                          Text('Delete',
+                              style: GoogleFonts.inter(
+                                  fontSize: 14, color: AppColors.error)),
+                        ]),
+                      ),
                   ],
                 ),
               ],
@@ -404,4 +491,4 @@ class _JobCard extends StatelessWidget {
   }
 }
 
-enum _Action { edit, toggle }
+enum _Action { edit, toggle, delete }

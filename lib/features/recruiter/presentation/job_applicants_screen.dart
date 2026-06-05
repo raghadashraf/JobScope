@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:csv/csv.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,15 +47,29 @@ class _JobApplicantsScreenState extends ConsumerState<JobApplicantsScreen> {
       ];
 
       final csv = const ListToCsvConverter().convert(rows);
-      final dir = await getTemporaryDirectory();
-      final file =
-          File('${dir.path}/applicants_${widget.job.title.replaceAll(' ', '_')}.csv');
-      await file.writeAsString(csv);
+      final fileName =
+          'applicants_${widget.job.title.replaceAll(RegExp(r'[^\w]+'), '_')}.csv';
 
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: 'Applicants for ${widget.job.title}',
-      );
+      if (kIsWeb) {
+        await Share.shareXFiles(
+          [
+            XFile.fromData(
+              utf8.encode(csv),
+              name: fileName,
+              mimeType: 'text/csv',
+            ),
+          ],
+          subject: 'Applicants for ${widget.job.title}',
+        );
+      } else {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$fileName');
+        await file.writeAsString(csv);
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: 'Applicants for ${widget.job.title}',
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -147,6 +163,9 @@ class _JobApplicantsScreenState extends ConsumerState<JobApplicantsScreen> {
                   const SizedBox(height: 16),
                   allAppsAsync.when(
                     data: (apps) {
+                      final appliedCount = apps
+                          .where((a) => a.countsTowardJobApplicantTotal)
+                          .length;
                       final shortlisted = apps
                           .where((a) =>
                               a.status == ApplicationStatus.shortlisted)
@@ -154,7 +173,7 @@ class _JobApplicantsScreenState extends ConsumerState<JobApplicantsScreen> {
                       return Row(
                         children: [
                           _statChip(
-                              '${apps.length} Applied', AppColors.primary),
+                              '$appliedCount Applied', AppColors.primary),
                           const SizedBox(width: 8),
                           _statChip(
                               '$shortlisted Shortlisted', AppColors.accent),

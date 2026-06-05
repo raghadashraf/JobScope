@@ -11,6 +11,7 @@ import '../../applications/data/application_providers.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../job_listing/presentation/widgets/match_badge_widget.dart';
+import '../../../core/utils/open_file_url.dart';
 import '../../messaging/data/messaging_providers.dart';
 import '../data/recruiter_providers.dart';
 import 'schedule_interview_sheet.dart';
@@ -149,8 +150,12 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final app = widget.application;
-    final cvAsync = ref.watch(candidateCvProvider(app.candidateId));
+    final liveAsync =
+        ref.watch(applicationByIdProvider(widget.application.id));
+    final app = liveAsync.value ?? widget.application;
+    final canSchedule = app.status != ApplicationStatus.rejected &&
+        app.status != ApplicationStatus.withdrawn;
+    final cvAsync = ref.watch(candidateCvForApplicationProvider(app));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -301,6 +306,91 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
                 ),
               ),
             ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: _cardDecoration(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Application Documents',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (app.cvUrl != null && app.cvUrl!.isNotEmpty)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.description_rounded,
+                            color: AppColors.primary),
+                        title: Text(
+                          app.cvFileName ?? 'Candidate CV',
+                          style: GoogleFonts.inter(
+                              fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        trailing: TextButton(
+                          onPressed: () => openFileUrl(app.cvUrl!),
+                          child: const Text('View CV'),
+                        ),
+                      )
+                    else
+                      Text(
+                        'No CV attached to this application.',
+                        style: GoogleFonts.inter(
+                            fontSize: 13, color: AppColors.textSecondary),
+                      ),
+                    if (app.hasCoverLetter) ...[
+                      const Divider(height: 20),
+                      Row(
+                        children: [
+                          const Icon(Icons.mail_outline_rounded,
+                              size: 18, color: AppColors.secondary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Cover Letter',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (app.coverLetterFileUrl != null &&
+                          app.coverLetterFileUrl!.isNotEmpty)
+                        TextButton.icon(
+                          onPressed: () =>
+                              openFileUrl(app.coverLetterFileUrl!),
+                          icon: const Icon(Icons.attach_file_rounded, size: 16),
+                          label: Text(app.coverLetterFileName ?? 'View file'),
+                        ),
+                      if (app.coverLetterText != null &&
+                          app.coverLetterText!.trim().isNotEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            app.coverLetterText!,
+                            style: GoogleFonts.inter(
+                                fontSize: 13, height: 1.5),
+                          ),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -464,19 +554,21 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: Row(
                 children: [
-                  _actionBtn(
-                    'Schedule Interview',
-                    Icons.calendar_month_rounded,
-                    AppColors.primary,
-                    () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) =>
-                          ScheduleInterviewSheet(application: app),
+                  if (canSchedule) ...[
+                    _actionBtn(
+                      'Schedule Interview',
+                      Icons.calendar_month_rounded,
+                      AppColors.primary,
+                      () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) =>
+                            ScheduleInterviewSheet(application: app),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
+                    const SizedBox(width: 8),
+                  ],
                   _actionBtn(
                     'Message',
                     Icons.chat_bubble_outline_rounded,
