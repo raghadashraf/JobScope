@@ -26,7 +26,7 @@ class SkillAssessmentScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Icon(Icons.arrow_back_ios_new_rounded,
+            child: Icon(Icons.arrow_back_ios_new_rounded,
                 size: 16, color: AppColors.textPrimary),
           ),
           onPressed: () => Navigator.pop(context),
@@ -73,7 +73,7 @@ class _NoCvView extends StatelessWidget {
                 color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.description_outlined,
+              child: Icon(Icons.description_outlined,
                   size: 40, color: AppColors.textTertiary),
             ),
             const SizedBox(height: 20),
@@ -583,7 +583,7 @@ class _ResultView extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      side: const BorderSide(color: AppColors.border),
+                      side: BorderSide(color: AppColors.border),
                     ),
                     child: Text('Done',
                         style: GoogleFonts.inter(

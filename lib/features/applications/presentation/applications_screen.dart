@@ -288,7 +288,7 @@ class _AppList extends StatelessWidget {
                   color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.assignment_outlined,
+                child: Icon(Icons.assignment_outlined,
                     size: 40, color: AppColors.textTertiary),
               ),
               const SizedBox(height: 20),

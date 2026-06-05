@@ -68,8 +68,8 @@ class _SaveToFolderSheetState extends ConsumerState<SaveToFolderSheet> {
     final collectionsAsync = ref.watch(collectionsStreamProvider);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+          color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -125,7 +125,7 @@ class _SaveToFolderSheetState extends ConsumerState<SaveToFolderSheet> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded,
+                  icon: Icon(Icons.close_rounded,
                       color: AppColors.textSecondary, size: 20),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -134,7 +134,7 @@ class _SaveToFolderSheetState extends ConsumerState<SaveToFolderSheet> {
             ),
           ),
           const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.border),
 
           // New folder row
           AnimatedCrossFade(
@@ -155,7 +155,7 @@ class _SaveToFolderSheetState extends ConsumerState<SaveToFolderSheet> {
             ),
           ),
 
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.border),
 
           // Collections list
           ConstrainedBox(
@@ -290,10 +290,10 @@ class _NewFolderField extends StatelessWidget {
                 fillColor: AppColors.surfaceVariant,
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border)),
+                    borderSide: BorderSide(color: AppColors.border)),
                 enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border)),
+                    borderSide: BorderSide(color: AppColors.border)),
                 focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(

@@ -33,7 +33,7 @@ class NotificationsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
+                child: Icon(Icons.arrow_back_ios_new_rounded,
                     size: 16, color: AppColors.textPrimary),
               ),
               onPressed: () => Navigator.pop(context),
@@ -46,6 +46,29 @@ class NotificationsScreen extends ConsumerWidget {
                 color: AppColors.textPrimary,
               ),
             ),
+            actions: [
+              notificationsAsync.maybeWhen(
+                data: (items) {
+                  final unread = items.where((n) => !n.read).length;
+                  if (unread == 0) return const SizedBox.shrink();
+                  return TextButton(
+                    onPressed: () async {
+                      if (user == null) return;
+                      await actions.markAllRead(user.uid);
+                    },
+                    child: Text(
+                      'Mark all read',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  );
+                },
+                orElse: () => const SizedBox.shrink(),
+              ),
+            ],
           ),
           notificationsAsync.when(
             data: (items) {
@@ -62,7 +85,7 @@ class NotificationsScreen extends ConsumerWidget {
                             color: AppColors.surfaceVariant,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Icon(Icons.notifications_none_rounded,
+                          child: Icon(Icons.notifications_none_rounded,
                               size: 36, color: AppColors.textTertiary),
                         ),
                         const SizedBox(height: 20),
@@ -104,11 +127,15 @@ class NotificationsScreen extends ConsumerWidget {
                         notification: n,
                         onTap: () async {
                           if (user == null) return;
-                          if (!n.read) {
+                          final opened = await openNotificationTarget(
+                            context,
+                            ref,
+                            n,
+                          );
+                          if (!context.mounted) return;
+                          if (opened && !n.read) {
                             await actions.markRead(user.uid, n.id);
                           }
-                          if (!context.mounted) return;
-                          await openNotificationTarget(context, ref, n);
                         },
                         onDelete: () async {
                           if (user == null) return;

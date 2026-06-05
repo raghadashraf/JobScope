@@ -1,13 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/local_notification_service.dart';
 import '../../../core/services/notification_service.dart';
-import '../../../core/utils/firestore_helpers.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/models/job_model.dart';
 import '../../../data/models/notification_model.dart';
 import '../../../data/repositories/notification_repository.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../settings/data/settings_providers.dart';
 
 final notificationRepositoryProvider =
     Provider<NotificationRepository>((_) => NotificationRepository());
@@ -25,26 +28,66 @@ final unreadNotificationsCountProvider = StreamProvider<int>((ref) {
   return ref.read(notificationRepositoryProvider).unreadCountStream(user.uid);
 });
 
-/// Saves FCM token on user doc (mobile; web may return null).
+/// Saves FCM token on user doc (mobile; skipped on web).
 final fcmTokenSyncProvider = FutureProvider<void>((ref) async {
-  if (kIsWeb) return;
   final user = ref.watch(firebaseUserProvider).value;
   if (user == null) return;
+  await NotificationService.syncTokenForUser(user.uid);
+});
 
-  try {
-    final service = NotificationService();
-    await service.initialize();
-    final token = await service.getToken();
-    if (token == null) return;
-    await firestoreWrite(
-      appFirestore.collection('users').doc(user.uid).set(
-        {'fcmToken': token},
-        SetOptions(merge: true),
-      ),
-    );
-  } catch (_) {
-    // FCM optional until Cloud Function push is deployed.
+/// Foreground FCM + token refresh (mobile only).
+final fcmListenersProvider = Provider<void>((ref) {
+  if (kIsWeb) return;
+
+  StreamSubscription<String>? tokenRefreshSub;
+  StreamSubscription<RemoteMessage>? messageSub;
+
+  void attach(String uid) {
+    tokenRefreshSub?.cancel();
+    messageSub?.cancel();
+
+    tokenRefreshSub =
+        FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+      NotificationService.saveTokenForUser(uid, token);
+    });
+
+    messageSub = FirebaseMessaging.onMessage.listen((message) {
+      final title = message.notification?.title ??
+          message.data['title'] as String? ??
+          'JobScope';
+      final body = message.notification?.body ??
+          message.data['body'] as String? ??
+          '';
+      LocalNotificationService().showInboxAlert(title: title, body: body);
+    });
   }
+
+  ref.listen(firebaseUserProvider, (_, next) {
+    final uid = next.value?.uid;
+    if (uid == null) {
+      tokenRefreshSub?.cancel();
+      messageSub?.cancel();
+      tokenRefreshSub = null;
+      messageSub = null;
+      return;
+    }
+    attach(uid);
+  });
+
+  final uid = ref.read(firebaseUserProvider).value?.uid;
+  if (uid != null) attach(uid);
+
+  ref.onDispose(() {
+    tokenRefreshSub?.cancel();
+    messageSub?.cancel();
+  });
+});
+
+/// Call from home shells: token sync + FCM listeners (respects settings).
+final fcmBootstrapProvider = Provider<void>((ref) {
+  if (!ref.watch(notificationsEnabledProvider)) return;
+  ref.watch(fcmTokenSyncProvider);
+  ref.watch(fcmListenersProvider);
 });
 
 class NotificationActions {
@@ -56,6 +99,8 @@ class NotificationActions {
 
   Future<void> markUnread(String userId, String id) =>
       _repo.markUnread(userId, id);
+
+  Future<void> markAllRead(String userId) => _repo.markAllRead(userId);
 
   Future<void> delete(String userId, String id) => _repo.delete(userId, id);
 

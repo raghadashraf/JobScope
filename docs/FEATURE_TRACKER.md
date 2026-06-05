@@ -349,7 +349,7 @@ Living log of shipped work. **Update this file at the end of every feature slice
 
 **Tests:** [TEST_CASES.md](./TEST_CASES.md) D4 table; `test/d4_settings_test.dart`
 
-**Note:** Many screens still use `AppColors.*` directly; Material `themeMode` applies to scaffold/theme widgets. Full dark polish = follow-up.
+**Note:** Semantic `AppColors` (background, surface, text, border) follow dark mode app-wide via `MaterialApp.builder`. Brand colors (primary, success) stay fixed.
 
 #### Implementation log
 

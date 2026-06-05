@@ -125,8 +125,8 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet> {
     });
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+          color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -184,7 +184,7 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded,
+                  icon: Icon(Icons.close_rounded,
                       color: AppColors.textSecondary, size: 20),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -193,19 +193,19 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.border),
 
           // ── Body ────────────────────────────────────────────────────────
           Flexible(
             child: letterAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 60),
+              loading: () => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 60),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(
+                    const CircularProgressIndicator(
                         strokeWidth: 2.5, color: AppColors.primary),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text('Generating your cover letter…',
                         style: TextStyle(
                             color: AppColors.textSecondary, fontSize: 13)),
@@ -245,11 +245,11 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet> {
                     fillColor: AppColors.surfaceVariant,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -264,7 +264,7 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet> {
 
           // ── Action Buttons ───────────────────────────────────────────────
           if (letterAsync.hasValue) ...[
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: AppColors.border),
             Padding(
               padding: EdgeInsets.fromLTRB(
                   20, 12, 20, MediaQuery.of(context).padding.bottom + 16),
@@ -282,7 +282,7 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
-                        side: const BorderSide(color: AppColors.border),
+                        side: BorderSide(color: AppColors.border),
                       ),
                     ),
                   ),

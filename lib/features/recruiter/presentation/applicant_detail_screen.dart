@@ -168,7 +168,7 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 16,
                   color: AppColors.textPrimary,

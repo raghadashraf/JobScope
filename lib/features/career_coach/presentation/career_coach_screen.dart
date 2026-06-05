@@ -98,7 +98,7 @@ class _CareerCoachScreenState extends ConsumerState<CareerCoachScreen> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border),
           ),
-          child: const Icon(Icons.arrow_back_ios_new_rounded,
+          child: Icon(Icons.arrow_back_ios_new_rounded,
               size: 16, color: AppColors.textPrimary),
         ),
         onPressed: () => Navigator.pop(context),
@@ -140,7 +140,7 @@ class _CareerCoachScreenState extends ConsumerState<CareerCoachScreen> {
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.delete_outline_rounded,
+          icon: Icon(Icons.delete_outline_rounded,
               color: AppColors.textTertiary, size: 20),
           tooltip: 'Clear history',
           onPressed: () => _showClearDialog(),
@@ -291,7 +291,7 @@ class _StarterChip extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded,
+              Icon(Icons.arrow_forward_ios_rounded,
                   size: 12, color: AppColors.textTertiary),
             ],
           ),
@@ -602,7 +602,7 @@ class _InputBar extends StatelessWidget {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide:
-                      const BorderSide(color: AppColors.primary, width: 1.5),
+                      BorderSide(color: AppColors.primary, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 10),

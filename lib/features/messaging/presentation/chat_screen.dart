@@ -121,7 +121,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Icon(Icons.arrow_back_ios_new_rounded,
+            child: Icon(Icons.arrow_back_ios_new_rounded,
                 size: 16, color: AppColors.textPrimary),
           ),
           onPressed: () => Navigator.pop(context),
@@ -172,8 +172,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ],
         ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
           child: Divider(height: 1, color: AppColors.border),
         ),
       ),
@@ -188,7 +188,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.chat_bubble_outline_rounded,
+                        Icon(Icons.chat_bubble_outline_rounded,
                             size: 48, color: AppColors.textTertiary),
                         const SizedBox(height: 12),
                         Text(
@@ -405,7 +405,7 @@ class _DateDivider extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          const Expanded(child: Divider(color: AppColors.border)),
+          Expanded(child: Divider(color: AppColors.border)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
@@ -414,7 +414,7 @@ class _DateDivider extends StatelessWidget {
                   fontSize: 11, color: AppColors.textTertiary),
             ),
           ),
-          const Expanded(child: Divider(color: AppColors.border)),
+          Expanded(child: Divider(color: AppColors.border)),
         ],
       ),
     );
@@ -440,7 +440,7 @@ class _InputBar extends StatelessWidget {
           16, 10, 16, 10 + MediaQuery.of(context).viewInsets.bottom),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: const Border(top: BorderSide(color: AppColors.border)),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         top: false,
@@ -466,12 +466,12 @@ class _InputBar extends StatelessWidget {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(22),
                     borderSide:
-                        const BorderSide(color: AppColors.border),
+                        BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(22),
                     borderSide:
-                        const BorderSide(color: AppColors.border),
+                        BorderSide(color: AppColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(22),

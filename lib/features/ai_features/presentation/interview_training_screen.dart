@@ -34,7 +34,7 @@ class InterviewTrainingScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Icon(Icons.arrow_back_ios_new_rounded,
+            child: Icon(Icons.arrow_back_ios_new_rounded,
                 size: 16, color: AppColors.textPrimary),
           ),
           onPressed: () => Navigator.pop(context),
@@ -332,7 +332,7 @@ class _QuestionCardState extends State<_QuestionCard> {
               ),
             )
           else ...[
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: AppColors.border),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(

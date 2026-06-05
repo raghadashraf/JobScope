@@ -76,3 +76,53 @@ Point `firebase.json` at database `jobscope` (same as app). See [FIRESTORE_SETUP
 | TC-N5 | ✅ | After function deploy |
 
 Until the function is deployed, document **FCM: skipped** in TEST_CASES manual records.
+
+---
+
+## Should you add this? (decision guide)
+
+### What you already have (no Function required)
+
+| Scenario | Works today? |
+|----------|----------------|
+| User opens app → sees inbox, badge, tap to navigate | ✅ Firestore inbox |
+| User has app open → status change local banner | ✅ `LocalNotificationService` |
+| Recruiter/candidate testing on **Chrome** | ✅ Inbox only (no FCM on web) |
+| Demo / class submission focused on apply + notifications list | ✅ Enough |
+
+### What the Cloud Function adds
+
+| Scenario | Needs Function? |
+|----------|-----------------|
+| Phone **locked or app swiped away** → OS notification appears | ✅ Yes |
+| True “push notification” in project rubric | ✅ Often yes |
+| Web-only testers | ❌ No benefit |
+
+### Why the app cannot send push by itself
+
+- Your Flutter app can **receive** FCM and save `fcmToken` on `users/{uid}`.
+- Sending push **to another user’s device** requires a **server** with Firebase Admin SDK (secret credentials). Putting that secret in the mobile app would be insecure and is not supported.
+- Flow: event → write `users/{uid}/notifications/{id}` (already in app) → **Function** reads new doc → `admin.messaging().send({ token: user.fcmToken, ... })`.
+
+### Costs and effort (rough)
+
+| Item | Notes |
+|------|--------|
+| Firebase Blaze plan | Cloud Functions need billing enabled (free tier often covers class usage) |
+| Setup time | ~1–2 hours: `functions/` folder, `firebase deploy --only functions`, Android `google-services.json`, test on **physical device** |
+| Maintenance | Function must target database **`jobscope`** (same as app) |
+| Duplicate alerts | Inbox write + push can double-notify if app is open; optional: skip FCM when `read: false` and app foreground, or only push when no active session |
+
+### Recommendation for JobScope
+
+- **Skip for now** if graders test on Chrome / in-app inbox and D3 tracker is already ✅ for inbox + client FCM.
+- **Add later** if you need a demo video showing a notification on a locked Android phone, or the rubric explicitly requires background push.
+
+### Minimal deploy path (when you choose yes)
+
+1. Firebase Console → upgrade to Blaze (if needed) → enable Cloud Messaging.
+2. `firebase init functions` (Node 20) in project root; paste the example trigger above.
+3. Set `databaseId: 'jobscope'` in Admin SDK (see example).
+4. `firebase deploy --only functions`
+5. Install release/debug build on Android, log in, confirm `users/{uid}.fcmToken` in Firestore.
+6. Kill app → recruiter shortlists candidate → expect system tray notification.

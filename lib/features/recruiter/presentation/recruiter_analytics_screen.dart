@@ -290,7 +290,7 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
                           padding: const EdgeInsets.all(32),
                           child: Column(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.pie_chart_outline_rounded,
                                 size: 48,
                                 color: AppColors.textTertiary,
@@ -530,7 +530,7 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
                     ),
                     child: Column(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.inbox_outlined,
                           size: 48,
                           color: AppColors.textTertiary,
@@ -561,7 +561,7 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
                         return Column(
                           children: [
                             if (entry.key > 0)
-                              const Divider(
+                              Divider(
                                 height: 1,
                                 color: AppColors.divider,
                                 indent: 16,

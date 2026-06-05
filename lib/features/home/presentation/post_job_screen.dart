@@ -79,11 +79,11 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
             GoogleFonts.inter(fontSize: 14, color: AppColors.textTertiary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -94,11 +94,11 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
+          borderSide: BorderSide(color: AppColors.error, width: 2),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -239,7 +239,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.border),
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new_rounded,
+                  child: Icon(Icons.arrow_back_ios_new_rounded,
                       size: 16, color: AppColors.textPrimary),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -497,7 +497,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
         ),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          border: const Border(top: BorderSide(color: AppColors.border)),
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: ElevatedButton(
           onPressed: _isLoading ? null : _submit,
@@ -567,7 +567,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
             ),
             GestureDetector(
               onTap: onRemove,
-              child: const Icon(Icons.close_rounded,
+              child: Icon(Icons.close_rounded,
                   size: 16, color: AppColors.textTertiary),
             ),
           ],

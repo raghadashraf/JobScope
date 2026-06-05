@@ -34,7 +34,7 @@ class RoleSelectionScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.border),
                           ),
-                          child: const Icon(Icons.arrow_back_ios_new_rounded,
+                          child: Icon(Icons.arrow_back_ios_new_rounded,
                               size: 16, color: AppColors.textPrimary),
                         ),
                       ),

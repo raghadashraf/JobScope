@@ -94,7 +94,7 @@ class _JobApplicantsScreenState extends ConsumerState<JobApplicantsScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
+                child: Icon(Icons.arrow_back_ios_new_rounded,
                     size: 16, color: AppColors.textPrimary),
               ),
               onPressed: () => Navigator.pop(context),
@@ -113,7 +113,7 @@ class _JobApplicantsScreenState extends ConsumerState<JobApplicantsScreen> {
                       )
                     : IconButton(
                         tooltip: 'Export CSV',
-                        icon: const Icon(Icons.download_rounded,
+                        icon: Icon(Icons.download_rounded,
                             color: AppColors.textSecondary),
                         onPressed: apps.isEmpty ? null : () => _exportCsv(apps),
                       ),
@@ -191,7 +191,7 @@ class _JobApplicantsScreenState extends ConsumerState<JobApplicantsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.people_outline_rounded,
+                        Icon(Icons.people_outline_rounded,
                             size: 64, color: AppColors.textTertiary),
                         const SizedBox(height: 16),
                         Text(
@@ -397,7 +397,7 @@ class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
           // ── Applied date + CV ─────────────────────────────────────
           Row(
             children: [
-              const Icon(Icons.access_time_rounded,
+              Icon(Icons.access_time_rounded,
                   size: 12, color: AppColors.textTertiary),
               const SizedBox(width: 4),
               Text(
@@ -453,7 +453,7 @@ class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
           // ── Action buttons ────────────────────────────────────────
           if (canAct) ...[
             const SizedBox(height: 12),
-            const Divider(color: AppColors.border, height: 1),
+            Divider(color: AppColors.border, height: 1),
             const SizedBox(height: 12),
             if (_isUpdating)
               const Center(

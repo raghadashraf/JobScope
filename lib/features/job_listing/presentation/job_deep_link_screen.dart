@@ -21,7 +21,7 @@ class JobDeepLinkScreen extends ConsumerWidget {
     final jobAsync = ref.watch(_deepLinkJobProvider(jobId));
 
     return jobAsync.when(
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
           child: CircularProgressIndicator(
@@ -42,7 +42,7 @@ class JobDeepLinkScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.link_off_rounded,
+                Icon(Icons.link_off_rounded,
                     size: 48, color: AppColors.textTertiary),
                 const SizedBox(height: 16),
                 Text(
@@ -88,7 +88,7 @@ class JobDeepLinkScreen extends ConsumerWidget {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) context.go(AppRoutes.jobs);
           });
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: AppColors.background,
             body: Center(
               child: CircularProgressIndicator(
@@ -102,7 +102,7 @@ class JobDeepLinkScreen extends ConsumerWidget {
             context.replace(AppRoutes.jobDetail, extra: job);
           }
         });
-        return const Scaffold(
+        return Scaffold(
           backgroundColor: AppColors.background,
           body: Center(
             child: CircularProgressIndicator(

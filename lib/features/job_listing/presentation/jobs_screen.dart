@@ -110,7 +110,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                               fontSize: 14,
                               color: AppColors.textTertiary,
                             ),
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                               Icons.search_rounded,
                               color: AppColors.textTertiary,
                               size: 20,
@@ -123,7 +123,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                                           .read(jobFilterProvider.notifier)
                                           .setSearch('');
                                     },
-                                    child: const Icon(Icons.clear_rounded,
+                                    child: Icon(Icons.clear_rounded,
                                         size: 18,
                                         color: AppColors.textTertiary),
                                   )
@@ -133,12 +133,12 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide:
-                                  const BorderSide(color: AppColors.border),
+                                  BorderSide(color: AppColors.border),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                               borderSide:
-                                  const BorderSide(color: AppColors.border),
+                                  BorderSide(color: AppColors.border),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -382,7 +382,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
+                  side: BorderSide(color: AppColors.primary),
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20, vertical: 10),
                   shape: RoundedRectangleBorder(
@@ -535,7 +535,7 @@ class _SavedJobsTab extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.lock_outline_rounded,
+            Icon(Icons.lock_outline_rounded,
                 size: 48, color: AppColors.textTertiary),
             const SizedBox(height: 16),
             Text('Sign in to save jobs',
@@ -562,7 +562,7 @@ class _SavedJobsTab extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.bookmark_border_rounded,
+                Icon(Icons.bookmark_border_rounded,
                     size: 60, color: AppColors.textTertiary),
                 const SizedBox(height: 16),
                 Text('No saved jobs',

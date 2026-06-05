@@ -307,7 +307,7 @@ class _JobCard extends StatelessWidget {
                 PopupMenuButton<_Action>(
                   onSelected: (a) =>
                       a == _Action.edit ? onEdit() : onToggleActive(),
-                  icon: const Icon(Icons.more_vert_rounded,
+                  icon: Icon(Icons.more_vert_rounded,
                       size: 20, color: AppColors.textTertiary),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -315,7 +315,7 @@ class _JobCard extends StatelessWidget {
                     PopupMenuItem(
                       value: _Action.edit,
                       child: Row(children: [
-                        const Icon(Icons.edit_outlined,
+                        Icon(Icons.edit_outlined,
                             size: 16, color: AppColors.textSecondary),
                         const SizedBox(width: 10),
                         Text('Edit', style: GoogleFonts.inter(fontSize: 14)),
@@ -359,7 +359,7 @@ class _JobCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 _tag(_fmtType(job.jobType), AppColors.secondary),
                 const Spacer(),
-                const Icon(Icons.people_outline_rounded,
+                Icon(Icons.people_outline_rounded,
                     size: 14, color: AppColors.textTertiary),
                 const SizedBox(width: 4),
                 Text(
@@ -370,7 +370,7 @@ class _JobCard extends StatelessWidget {
                       fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward_ios_rounded,
+                Icon(Icons.arrow_forward_ios_rounded,
                     size: 12, color: AppColors.textTertiary),
               ],
             ),

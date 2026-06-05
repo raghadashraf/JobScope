@@ -41,7 +41,7 @@ class AppNavBar extends StatelessWidget {
             offset: const Offset(0, -6),
           ),
         ],
-        border: const Border(
+        border: Border(
             top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
       child: SafeArea(

@@ -66,7 +66,7 @@ class JobDetailScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
+                child: Icon(Icons.arrow_back_ios_new_rounded,
                     size: 16, color: AppColors.textPrimary),
               ),
               onPressed: () => Navigator.pop(context),
@@ -83,7 +83,7 @@ class JobDetailScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.border),
                   ),
-                  child: const Icon(Icons.share_rounded,
+                  child: Icon(Icons.share_rounded,
                       size: 20, color: AppColors.textSecondary),
                 ),
               ),
@@ -325,8 +325,8 @@ class JobDetailScreen extends ConsumerWidget {
                                 height: 6,
                                 margin: const EdgeInsets.only(
                                     top: 6, right: 10),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primary,
+                                decoration: BoxDecoration(
+          color: AppColors.primary,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -392,7 +392,7 @@ class JobDetailScreen extends ConsumerWidget {
           top: 16,
           bottom: MediaQuery.of(context).padding.bottom + 16,
         ),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
@@ -448,7 +448,7 @@ class JobDetailScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
-                    side: const BorderSide(color: AppColors.accent),
+                    side: BorderSide(color: AppColors.accent),
                   ),
                 ),
               ),
@@ -471,7 +471,7 @@ class JobDetailScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
-                  side: const BorderSide(color: AppColors.primary),
+                  side: BorderSide(color: AppColors.primary),
                 ),
               ),
             ),
@@ -580,7 +580,7 @@ class JobDetailScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      side: const BorderSide(color: AppColors.border),
+                      side: BorderSide(color: AppColors.border),
                     ),
                     child: Text('Cancel',
                         style: GoogleFonts.inter(

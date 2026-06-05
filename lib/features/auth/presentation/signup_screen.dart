@@ -255,7 +255,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                       child: Container(
                         constraints:
                             BoxConstraints(minHeight: size.height - heroHeight),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.background,
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(32),
@@ -483,11 +483,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -495,11 +495,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderSide: BorderSide(color: AppColors.error, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 15),

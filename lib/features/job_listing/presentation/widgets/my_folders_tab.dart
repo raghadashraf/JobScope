@@ -99,7 +99,7 @@ class MyFoldersTab extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.lock_outline_rounded,
+          Icon(Icons.lock_outline_rounded,
               size: 48, color: AppColors.textTertiary),
           const SizedBox(height: 16),
           Text('Sign in to use folders',
@@ -188,7 +188,7 @@ class _FolderCard extends ConsumerWidget {
             PopupMenuButton<_FolderAction>(
               onSelected: (action) =>
                   _onAction(context, ref, action),
-              icon: const Icon(Icons.more_vert_rounded,
+              icon: Icon(Icons.more_vert_rounded,
                   color: AppColors.textTertiary, size: 20),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -196,7 +196,7 @@ class _FolderCard extends ConsumerWidget {
                 PopupMenuItem(
                   value: _FolderAction.rename,
                   child: Row(children: [
-                    const Icon(Icons.drive_file_rename_outline_rounded,
+                    Icon(Icons.drive_file_rename_outline_rounded,
                         size: 18, color: AppColors.textSecondary),
                     const SizedBox(width: 10),
                     Text('Rename',
@@ -251,11 +251,11 @@ class _FolderCard extends ConsumerWidget {
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border)),
+                borderSide: BorderSide(color: AppColors.border)),
             focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide:
-                    const BorderSide(color: AppColors.primary, width: 1.5)),
+                    BorderSide(color: AppColors.primary, width: 1.5)),
           ),
         ),
         actions: [

@@ -383,7 +383,7 @@ class _RecruiterDashboardScreenState
                                       ],
                                     ),
                                   ),
-                                  const Icon(Icons.arrow_forward_ios_rounded,
+                                  Icon(Icons.arrow_forward_ios_rounded,
                                       size: 14,
                                       color: AppColors.textTertiary),
                                 ],
@@ -433,7 +433,7 @@ class _RecruiterDashboardScreenState
                                       color: AppColors.surfaceVariant,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    child: const Icon(Icons.inbox_outlined,
+                                    child: Icon(Icons.inbox_outlined,
                                         size: 30,
                                         color: AppColors.textTertiary),
                                   ),
@@ -467,7 +467,7 @@ class _RecruiterDashboardScreenState
                                 return Column(
                                   children: [
                                     if (entry.key > 0)
-                                      const Divider(
+                                      Divider(
                                           height: 1,
                                           color: AppColors.divider,
                                           indent: 16,
@@ -609,7 +609,7 @@ class _NotificationBellButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Icon(Icons.notifications_outlined,
+            child: Icon(Icons.notifications_outlined,
                 color: AppColors.textPrimary),
           ),
           if (unreadCount > 0)

@@ -139,8 +139,8 @@ class _ScheduleInterviewSheetState
     final bottomPad = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
+      decoration: BoxDecoration(
+          color: AppColors.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + bottomPad),
@@ -315,7 +315,7 @@ class _SlotRow extends StatelessWidget {
             ),
             GestureDetector(
               onTap: onEdit,
-              child: const Icon(Icons.edit_rounded,
+              child: Icon(Icons.edit_rounded,
                   size: 18, color: AppColors.textSecondary),
             ),
             const SizedBox(width: 12),

@@ -31,7 +31,7 @@ class CandidateInterviewsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
+                child: Icon(Icons.arrow_back_ios_new_rounded,
                     size: 16, color: AppColors.textPrimary),
               ),
               onPressed: () => Navigator.pop(context),
@@ -60,7 +60,7 @@ class CandidateInterviewsScreen extends ConsumerWidget {
                             color: AppColors.surfaceVariant,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Icon(Icons.calendar_today_rounded,
+                          child: Icon(Icons.calendar_today_rounded,
                               size: 36, color: AppColors.textTertiary),
                         ),
                         const SizedBox(height: 20),
@@ -322,7 +322,7 @@ class _InterviewCardState extends ConsumerState<_InterviewCard> {
                 label: const Text('Add to Calendar'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
+                  side: BorderSide(color: AppColors.primary),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),

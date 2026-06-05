@@ -213,8 +213,8 @@ flutter test test/d4_settings_test.dart
 
 | Case | Type | Result | Notes |
 |------|------|--------|-------|
-| D4 manual | Manual | ⬜ Pending | Steps 1–6 above |
-| Automated | `flutter test` | ✅ Pass | `test/d4_settings_test.dart` |
+| D4 manual | Manual | ⬜ Pending | Steps 1–6 above (Chrome: hot restart after toggle) |
+| Automated | `flutter test test/d4_settings_test.dart` | ✅ **9/9 pass** | Prefs persistence, theme provider, AppColors sync |
 
 ---
 

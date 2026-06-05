@@ -236,7 +236,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       child: Container(
                         constraints: BoxConstraints(
                             minHeight: size.height - heroHeight + topPad),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.background,
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(32),
@@ -398,11 +398,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -410,11 +410,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderSide: BorderSide(color: AppColors.error, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
