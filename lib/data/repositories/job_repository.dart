@@ -38,7 +38,10 @@ class JobRepository {
         .where('recruiterId', isEqualTo: recruiterId)
         .snapshots()
         .map((snap) {
-          final jobs = snap.docs.map(JobModel.fromDoc).toList();
+          final jobs = snap.docs
+              .map(JobModel.fromDoc)
+              .where((j) => !j.isDeleted)
+              .toList();
           jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
           return jobs;
         });
@@ -153,6 +156,14 @@ class JobRepository {
   // ─── Recruiter: Re-activate job ───────────────────────────────────────────
   Future<void> activateJob(String id) async {
     await firestoreWrite(_jobs.doc(id).update({'isActive': true}));
+  }
+
+  // ─── Recruiter: Soft-delete job (hidden from UI, kept in Firestore) ───────
+  Future<void> softDeleteJob(String id) async {
+    await firestoreWrite(_jobs.doc(id).update({
+      'isDeleted': true,
+      'isActive': false,
+    }));
   }
 
   // ─── Recruiter: Hard-delete job ───────────────────────────────────────────

@@ -2,10 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/utils/firestore_helpers.dart';
 import '../models/application_model.dart';
 import 'notification_repository.dart';
+import 'user_stats_repository.dart';
 
 class ApplicationRepository {
   final FirebaseFirestore _firestore = appFirestore;
   final NotificationRepository _notifications = NotificationRepository();
+  final UserStatsRepository _userStats = UserStatsRepository();
 
   CollectionReference get _applications =>
       _firestore.collection('applications');
@@ -20,6 +22,12 @@ class ApplicationRepository {
     required String candidateEmail,
     String? candidatePhotoUrl,
     String? cvUrl,
+    String? cvId,
+    String? cvFileName,
+    String? coverLetterText,
+    String? coverLetterFileUrl,
+    String? coverLetterFileName,
+    String? coverLetterSource,
     int? matchScore,
   }) async {
     final existing = await hasApplied(jobId: jobId, candidateId: candidateId);
@@ -38,6 +46,12 @@ class ApplicationRepository {
       candidateEmail: candidateEmail,
       candidatePhotoUrl: candidatePhotoUrl,
       cvUrl: cvUrl,
+      cvId: cvId,
+      cvFileName: cvFileName,
+      coverLetterText: coverLetterText,
+      coverLetterFileUrl: coverLetterFileUrl,
+      coverLetterFileName: coverLetterFileName,
+      coverLetterSource: coverLetterSource,
       status: ApplicationStatus.pending,
       appliedAt: DateTime.now(),
       matchScore: matchScore,
@@ -46,6 +60,9 @@ class ApplicationRepository {
     await firestoreWrite(
       doc.set(firestoreEncode(application.toMap())),
     );
+    try {
+      await _userStats.refreshApplicationStats(candidateId);
+    } catch (_) {}
     return application;
   }
 
@@ -145,9 +162,11 @@ class ApplicationRepository {
         application: application,
         newStatus: status,
       );
-    } catch (_) {
-      // Status saved; inbox write is best-effort (rules/network).
-    }
+    } catch (_) {}
+
+    try {
+      await _userStats.refreshApplicationStats(application.candidateId);
+    } catch (_) {}
   }
 
   // ─── Update recruiter notes on an application ─────────────────────────────
@@ -192,5 +211,9 @@ class ApplicationRepository {
       'status': ApplicationStatus.withdrawn.name,
       'updatedAt': FieldValue.serverTimestamp(),
     }));
+
+    try {
+      await _userStats.refreshApplicationStats(candidateId);
+    } catch (_) {}
   }
 }

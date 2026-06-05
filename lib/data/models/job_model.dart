@@ -20,6 +20,8 @@ class JobModel {
   final String? salaryCurrency;
   final DateTime postedAt;
   final bool isActive;
+  /// Hidden from recruiter UI after delete; doc kept in Firestore.
+  final bool isDeleted;
 
   JobModel({
     required this.id,
@@ -39,6 +41,7 @@ class JobModel {
     this.salaryCurrency = 'USD',
     required this.postedAt,
     this.isActive = true,
+    this.isDeleted = false,
   });
 
   Map<String, dynamic> toMap() => {
@@ -59,6 +62,7 @@ class JobModel {
         'salaryCurrency': salaryCurrency,
         'postedAt': Timestamp.fromDate(postedAt),
         'isActive': isActive,
+        'isDeleted': isDeleted,
       };
 
   factory JobModel.fromMap(Map<String, dynamic> map, {String? docId}) =>
@@ -81,6 +85,7 @@ class JobModel {
         postedAt:
             (map['postedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         isActive: map['isActive'] ?? true,
+        isDeleted: map['isDeleted'] ?? false,
       );
 
   factory JobModel.fromDoc(DocumentSnapshot doc) =>
@@ -104,6 +109,7 @@ class JobModel {
     Object? salaryCurrency = _sentinel,
     DateTime? postedAt,
     bool? isActive,
+    bool? isDeleted,
   }) =>
       JobModel(
         id: id ?? this.id,
@@ -129,6 +135,7 @@ class JobModel {
             : salaryCurrency as String?,
         postedAt: postedAt ?? this.postedAt,
         isActive: isActive ?? this.isActive,
+        isDeleted: isDeleted ?? this.isDeleted,
       );
 
   String get salaryRange {

@@ -6,11 +6,19 @@ import '../../../core/services/ai_service.dart';
 import '../../cv_management/data/cv_providers.dart';
 import '../data/ai_providers.dart';
 
-class SkillAssessmentScreen extends ConsumerWidget {
+class SkillAssessmentScreen extends ConsumerStatefulWidget {
   const SkillAssessmentScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SkillAssessmentScreen> createState() =>
+      _SkillAssessmentScreenState();
+}
+
+class _SkillAssessmentScreenState extends ConsumerState<SkillAssessmentScreen> {
+  bool _showIntro = true;
+
+  @override
+  Widget build(BuildContext context) {
     final cvAsync = ref.watch(cvStreamProvider);
 
     return Scaffold(
@@ -40,17 +48,84 @@ class SkillAssessmentScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: cvAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
-        error: (_, e) =>
-            const Center(child: Text('Could not load CV data')),
-        data: (cv) {
-          if (cv == null || cv.skills.isEmpty) {
-            return _NoCvView();
-          }
-          return _QuizLoader(skills: cv.skills);
-        },
+      body: _showIntro
+          ? _SkillAssessmentIntro(
+              onStart: () => setState(() => _showIntro = false),
+            )
+          : cvAsync.when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (_, e) =>
+                  const Center(child: Text('Could not load CV data')),
+              data: (cv) {
+                if (cv == null) {
+                  return _NoCvView();
+                }
+                if (cv.skills.isEmpty) {
+                  return _PickSkillsView(fileName: cv.fileName);
+                }
+                return _QuizLoader(skills: cv.skills);
+              },
+            ),
+    );
+  }
+}
+
+class _SkillAssessmentIntro extends StatelessWidget {
+  final VoidCallback onStart;
+  const _SkillAssessmentIntro({required this.onStart});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        children: [
+          const Spacer(),
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: Icon(Icons.school_rounded,
+                size: 44, color: AppColors.accent),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Skill Assessment',
+            style: GoogleFonts.plusJakartaSans(
+                fontSize: 22, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'This feature generates a short quiz based on your CV skills. '
+            'You will answer multiple-choice questions, see explanations, '
+            'and get a score at the end to help you prepare before applying.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+                fontSize: 14, color: AppColors.textSecondary, height: 1.55),
+          ),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onStart,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('Start Assessment',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const Spacer(flex: 2),
+        ],
       ),
     );
   }
@@ -100,6 +175,98 @@ class _NoCvView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12)),
               ),
               child: Text('Go Back', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── CV uploaded but skills not parsed yet ─────────────────────────────────────
+class _PickSkillsView extends StatefulWidget {
+  final String fileName;
+  const _PickSkillsView({required this.fileName});
+
+  @override
+  State<_PickSkillsView> createState() => _PickSkillsViewState();
+}
+
+class _PickSkillsViewState extends State<_PickSkillsView> {
+  final _skillsCtrl = TextEditingController();
+  List<String>? _skills;
+
+  @override
+  void dispose() {
+    _skillsCtrl.dispose();
+    super.dispose();
+  }
+
+  void _start() {
+    final raw = _skillsCtrl.text.trim();
+    if (raw.isEmpty) return;
+    final skills = raw
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .take(8)
+        .toList();
+    if (skills.isEmpty) return;
+    setState(() => _skills = skills);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_skills != null) {
+      return _QuizLoader(skills: _skills!);
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Skills for Your Quiz',
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your CV (${widget.fileName}) is uploaded. Enter skills to assess (comma-separated).',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                  fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _skillsCtrl,
+              maxLines: 2,
+              decoration: InputDecoration(
+                hintText: 'e.g. Flutter, Dart, Firebase, Git',
+                filled: true,
+                fillColor: AppColors.surfaceVariant,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _start,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('Start Assessment',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
             ),
           ],
         ),

@@ -207,6 +207,47 @@ class _QuestionsView extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.accent.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.tips_and_updates_rounded,
+                      size: 18, color: AppColors.accent),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Interview tips',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '• Use STAR: Situation, Task, Action, Result\n'
+                '• Be specific — name projects, metrics, and outcomes\n'
+                '• Keep answers 60–90 seconds; practice out loud\n'
+                '• Prepare 2 questions to ask the interviewer',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  height: 1.55,
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 20),
         ...questions.asMap().entries.map((entry) => Padding(
               padding: const EdgeInsets.only(bottom: 16),
