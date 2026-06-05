@@ -272,6 +272,17 @@ class AuthRepository {
       'linkedinUrl': linkedinUrl,
       'website': website,
       'company': company,
+      'profile': {
+        'name': name,
+        'phone': phone,
+        'photoUrl': photoUrl,
+        'bio': bio,
+        'headline': headline,
+        'location': location,
+        'linkedinUrl': linkedinUrl,
+        'website': website,
+        'company': company,
+      },
     }).timeout(const Duration(seconds: 10));
     await _auth.currentUser
         ?.updateDisplayName(name)

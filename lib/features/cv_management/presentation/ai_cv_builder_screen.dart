@@ -5,12 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/firestore_helpers.dart';
 import '../../../core/constants/secrets.dart';
 import '../../../data/models/cv_model.dart';
 import '../../auth/data/auth_providers.dart';
+import '../data/cv_providers.dart';
 
 const _kPurple = Color(0xFF7C3AED);
 const _kIndigo = Color(0xFF4F46E5);
@@ -259,7 +258,7 @@ class _AiCvBuilderScreenState extends ConsumerState<AiCvBuilderScreen> {
         profileStrength: score.clamp(0, 100),
       );
 
-      await appFirestore.collection('cvs').doc(uid).set(cv.toMap(), SetOptions(merge: true));
+      await ref.read(cvParserServiceProvider).insertCv(cv);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

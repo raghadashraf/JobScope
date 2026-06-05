@@ -11,6 +11,7 @@ import '../../auth/data/auth_providers.dart';
 import '../../applications/data/application_providers.dart';
 import '../../notifications/data/notification_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
+import '../../../core/utils/open_file_url.dart';
 import '../../ai_features/data/ai_providers.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -537,7 +538,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => context.push(AppRoutes.cv),
+                  onPressed: () {
+                    final latest = ref.read(cvStreamProvider).value;
+                    if (latest != null && latest.hasFile) {
+                      openFileUrl(latest.fileUrl);
+                    } else {
+                      context.push(AppRoutes.cv);
+                    }
+                  },
                   icon: const Icon(Icons.visibility_rounded, size: 18),
                   label: const Text('View CV'),
                   style: ElevatedButton.styleFrom(
@@ -560,7 +568,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       onPressed: isUploading
                           ? null
                           : () =>
-                              ref.read(cvUploadProvider.notifier).pickAndUpload(),
+                              ref
+                                  .read(cvUploadProvider.notifier)
+                                  .pickAndUploadBasic(),
                       icon: isUploading
                           ? const SizedBox(
                               width: 16,

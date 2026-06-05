@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_router.dart';
+import '../../../core/utils/open_file_url.dart';
 import '../data/cv_providers.dart';
 import '../../../data/models/cv_model.dart';
 
-Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+Future<void> _confirmDelete(
+    BuildContext context, WidgetRef ref, CvModel cv) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -37,7 +41,7 @@ Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     ),
   );
   if (confirmed == true) {
-    ref.read(cvUploadProvider.notifier).deleteCv();
+    ref.read(cvUploadProvider.notifier).deleteCv(cvId: cv.id);
   }
 }
 
@@ -46,25 +50,36 @@ class CvScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cvAsync = ref.watch(cvStreamProvider);
+    final cvsAsync = ref.watch(userCvsStreamProvider);
     final uploadState = ref.watch(cvUploadProvider);
+    final isBusy = uploadState.status != CvUploadStatus.idle &&
+        uploadState.status != CvUploadStatus.error &&
+        uploadState.status != CvUploadStatus.done;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('My CV',
+        title: Text('My CVs',
             style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w700, fontSize: 20)),
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: false,
+        actions: [
+          TextButton.icon(
+            onPressed: isBusy
+                ? null
+                : () => context.push(AppRoutes.aiCvBuilder),
+            icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+            label: const Text('Build with AI'),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Upload status messages ────────────────────────────────────
             if (uploadState.status == CvUploadStatus.uploading ||
                 uploadState.status == CvUploadStatus.parsing)
               _UploadProgressCard(
@@ -76,53 +91,196 @@ class CvScreen extends ConsumerWidget {
                 status: uploadState.status,
                 progress: null,
               ),
-
             if (uploadState.status == CvUploadStatus.error)
               _ErrorCard(
                 message: uploadState.errorMessage ?? 'An error occurred',
                 onDismiss: () =>
                     ref.read(cvUploadProvider.notifier).reset(),
               ),
-
             if (uploadState.status == CvUploadStatus.done)
               _SuccessBanner(
                 onDismiss: () =>
                     ref.read(cvUploadProvider.notifier).reset(),
               ),
-
-            // ── CV content ────────────────────────────────────────────────
-            cvAsync.when(
-              data: (cv) => cv == null
-                  ? _EmptyState(
-                      onUpload: () =>
-                          ref.read(cvUploadProvider.notifier).pickAndUpload(),
-                      isLoading:
-                          uploadState.status != CvUploadStatus.idle &&
-                              uploadState.status != CvUploadStatus.error &&
-                              uploadState.status != CvUploadStatus.done,
-                    )
-                  : _CvContent(
-                      cv: cv,
-                      onReplace: () =>
-                          ref.read(cvUploadProvider.notifier).pickAndUpload(),
-                      onDelete: () => _confirmDelete(context, ref),
-                      isLoading:
-                          uploadState.status != CvUploadStatus.idle &&
-                              uploadState.status != CvUploadStatus.error &&
-                              uploadState.status != CvUploadStatus.done,
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isBusy
+                        ? null
+                        : () => ref
+                            .read(cvUploadProvider.notifier)
+                            .pickAndUploadBasic(),
+                    icon: const Icon(Icons.upload_file_rounded, size: 18),
+                    label: const Text('Upload CV'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: isBusy
+                        ? null
+                        : () => ref
+                            .read(cvUploadProvider.notifier)
+                            .pickAndUpload(),
+                    icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                    label: const Text('Upload + AI Parse'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
                     ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            cvsAsync.when(
+              data: (cvs) {
+                if (cvs.isEmpty) {
+                  return _EmptyState(
+                    onUpload: () => ref
+                        .read(cvUploadProvider.notifier)
+                        .pickAndUploadBasic(),
+                    isLoading: isBusy,
+                  );
+                }
+                return Column(
+                  children: cvs.asMap().entries.map((entry) {
+                    final cv = entry.value;
+                    final isLatest = entry.key == 0;
+                    return _CvListCard(
+                      cv: cv,
+                      isLatest: isLatest,
+                      onView: () => openFileUrl(cv.fileUrl),
+                      onDelete: () => _confirmDelete(context, ref, cv),
+                      isLoading: isBusy,
+                    );
+                  }).toList(),
+                );
+              },
               loading: () => const Center(
-                  child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                  child: Text('Error: $e',
-                      style:
-                          const TextStyle(color: AppColors.error))),
+                  child: Padding(
+                padding: EdgeInsets.all(40),
+                child: CircularProgressIndicator(),
+              )),
+              error: (e, _) => Text('Error: $e',
+                  style: const TextStyle(color: AppColors.error)),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+class _CvListCard extends StatelessWidget {
+  final CvModel cv;
+  final bool isLatest;
+  final VoidCallback onView;
+  final VoidCallback onDelete;
+  final bool isLoading;
+
+  const _CvListCard({
+    required this.cv,
+    required this.isLatest,
+    required this.onView,
+    required this.onDelete,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isLatest
+              ? AppColors.primary.withValues(alpha: 0.35)
+              : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      cv.fileName.isNotEmpty
+                          ? cv.fileName
+                          : 'AI-built CV',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Uploaded ${_formatDate(cv.uploadedAt)}${isLatest ? ' · Latest' : ''}',
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isLoading)
+                IconButton(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline_rounded,
+                      color: AppColors.error, size: 20),
+                ),
+            ],
+          ),
+          if (cv.skills.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: cv.skills
+                  .take(5)
+                  .map((s) => Chip(
+                        label: Text(s, style: const TextStyle(fontSize: 11)),
+                        visualDensity: VisualDensity.compact,
+                      ))
+                  .toList(),
+            ),
+          ],
+          const SizedBox(height: 12),
+          if (cv.hasFile)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onView,
+                icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                label: const Text('View PDF'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            )
+          else
+            Text(
+              'AI-generated profile (no file). Skills used for matching.',
+              style: GoogleFonts.inter(
+                  fontSize: 12, color: AppColors.textTertiary),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime d) => '${d.day}/${d.month}/${d.year}';
 }
 
 // ── Empty state: no CV yet ────────────────────────────────────────────────────

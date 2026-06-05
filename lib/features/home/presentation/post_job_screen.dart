@@ -33,6 +33,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   final List<String> _skills = [];
   bool _hasSalary = false;
   bool _isLoading = false;
+  bool _companyPrefilled = false;
 
   bool get _isEditMode => widget.jobToEdit != null;
 
@@ -127,13 +128,20 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   }
 
   void _addSkill() {
-    final text = _skillCtrl.text.trim();
-    if (text.isNotEmpty && !_skills.contains(text)) {
-      setState(() {
-        _skills.add(text);
-        _skillCtrl.clear();
-      });
-    }
+    final raw = _skillCtrl.text.trim();
+    if (raw.isEmpty) return;
+    final parts = raw
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty);
+    setState(() {
+      for (final skill in parts) {
+        if (!_skills.any((s) => s.toLowerCase() == skill.toLowerCase())) {
+          _skills.add(skill);
+        }
+      }
+      _skillCtrl.clear();
+    });
   }
 
   void _clearForm() {
@@ -223,6 +231,15 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isEditMode && !_companyPrefilled) {
+      final user = ref.watch(currentUserProvider).value;
+      final company = user?.company?.trim();
+      if (company != null && company.isNotEmpty) {
+        _companyCtrl.text = company;
+        _companyPrefilled = true;
+      }
+    }
+
     final accent = _isEditMode ? AppColors.secondary : AppColors.primary;
 
     return Scaffold(
@@ -388,8 +405,8 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                     child: TextFormField(
                       controller: _skillCtrl,
                       style: GoogleFonts.inter(fontSize: 14),
-                      decoration:
-                          _inputDecoration('e.g. Flutter, Firebase, Dart'),
+                      decoration: _inputDecoration(
+                          'e.g. Flutter, Firebase, Dart (comma-separated)'),
                       onFieldSubmitted: (_) => _addSkill(),
                     ),
                   ),

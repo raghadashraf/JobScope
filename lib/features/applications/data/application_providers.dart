@@ -5,6 +5,7 @@ import '../../../data/repositories/application_repository.dart';
 import '../../ai_features/data/ai_providers.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
+import 'application_draft_providers.dart';
 import '../../job_listing/data/job_providers.dart';
 import '../../notifications/data/notification_providers.dart';
 
@@ -83,7 +84,12 @@ class ApplyNotifier extends Notifier<ApplyState> {
     }
 
     final currentUser = ref.read(currentUserProvider).value;
-    final cv = ref.read(cvStreamProvider).value;
+    final draft = ref.read(applicationDraftProvider(jobId)).value;
+    final cv = draft?.cvId != null
+        ? await ref
+            .read(cvParserServiceProvider)
+            .getCv(user.uid, cvId: draft!.cvId)
+        : ref.read(cvStreamProvider).value;
 
     state = state.copyWith(status: ApplyStatus.loading);
 
@@ -115,9 +121,19 @@ class ApplyNotifier extends Notifier<ApplyState> {
             candidateName: currentUser?.name ?? user.displayName ?? '',
             candidateEmail: user.email ?? '',
             candidatePhotoUrl: currentUser?.photoUrl,
-            cvUrl: cv?.fileUrl,
+            cvUrl: draft?.cvUrl ?? cv?.fileUrl,
+            cvId: draft?.cvId ?? cv?.id,
+            cvFileName: draft?.cvFileName ?? cv?.fileName,
+            coverLetterText: draft?.coverLetterText,
+            coverLetterFileUrl: draft?.coverLetterFileUrl,
+            coverLetterFileName: draft?.coverLetterFileName,
+            coverLetterSource: draft?.coverLetterSource,
             matchScore: matchScore,
           );
+
+      await ref
+          .read(applicationDraftNotifierProvider.notifier)
+          .clearDraft(jobId);
 
       if (job != null) {
         try {
