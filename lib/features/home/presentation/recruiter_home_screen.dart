@@ -75,7 +75,7 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(fcmTokenSyncProvider);
+    ref.watch(fcmBootstrapProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,

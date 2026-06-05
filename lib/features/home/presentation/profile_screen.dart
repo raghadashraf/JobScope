@@ -104,7 +104,7 @@ class ProfileScreen extends ConsumerWidget {
                                   children: [
                                     _UnreadBadge(count: unreadCount),
                                     const SizedBox(width: 8),
-                                    const Icon(
+                                    Icon(
                                         Icons.arrow_forward_ios_rounded,
                                         size: 14,
                                         color: AppColors.textTertiary),
@@ -118,7 +118,7 @@ class ProfileScreen extends ConsumerWidget {
                           icon: Icons.settings_outlined,
                           iconColor: AppColors.textSecondary,
                           title: 'Settings',
-                          onTap: () {},
+                          onTap: () => context.push(AppRoutes.settings),
                         ),
                       ]),
 
@@ -132,13 +132,13 @@ class ProfileScreen extends ConsumerWidget {
                           icon: Icons.help_outline_rounded,
                           iconColor: AppColors.info,
                           title: 'Help & Support',
-                          onTap: () {},
+                          onTap: () => context.push(AppRoutes.help),
                         ),
                         _MenuTileData(
                           icon: Icons.star_outline_rounded,
                           iconColor: const Color(0xFFF59E0B),
                           title: 'Rate JobScope',
-                          onTap: () {},
+                          onTap: () => context.push(AppRoutes.about),
                         ),
                       ]),
 
@@ -352,7 +352,7 @@ class _ProfileHero extends StatelessWidget {
               const SizedBox(height: 24),
               Container(
                 height: 28,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.background,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(28),
@@ -465,7 +465,7 @@ class _MenuGroup extends StatelessWidget {
           return Column(
             children: [
               if (i > 0)
-                const Divider(
+                Divider(
                     height: 1, color: AppColors.divider,
                     indent: 56, endIndent: 0),
               ListTile(
@@ -488,7 +488,7 @@ class _MenuGroup extends StatelessWidget {
                       color: AppColors.textPrimary,
                     )),
                 trailing: tile.trailing ??
-                    const Icon(Icons.arrow_forward_ios_rounded,
+                    Icon(Icons.arrow_forward_ios_rounded,
                         size: 14, color: AppColors.textTertiary),
               ),
             ],

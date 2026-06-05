@@ -10,6 +10,7 @@ import 'dashboard_screen.dart';
 import '../../job_listing/presentation/jobs_screen.dart';
 import '../../applications/presentation/applications_screen.dart';
 import '../../notifications/data/notification_providers.dart';
+import '../../settings/data/settings_providers.dart';
 import 'profile_screen.dart';
 import 'widgets/app_nav_bar.dart';
 
@@ -80,7 +81,7 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(fcmTokenSyncProvider);
+    ref.watch(fcmBootstrapProvider);
 
     ref.listen<AsyncValue<List<ApplicationModel>>>(myApplicationsProvider,
         (_, next) {
@@ -88,7 +89,10 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
         for (final app in apps) {
           final prev = _lastStatuses[app.id];
           final current = app.status.name;
-          if (prev != null && prev != current && current != 'pending') {
+          if (prev != null &&
+              prev != current &&
+              current != 'pending' &&
+              ref.read(notificationsEnabledProvider)) {
             LocalNotificationService().showStatusChange(
               jobTitle: app.jobTitle,
               company: app.company,
