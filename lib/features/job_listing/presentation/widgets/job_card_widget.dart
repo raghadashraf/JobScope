@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../data/models/job_model.dart';
 import '../../../ai_features/data/ai_providers.dart';
+import '../../../applications/data/application_providers.dart';
+import '../../../auth/data/auth_providers.dart';
 import 'match_badge_widget.dart';
 
 class JobCardWidget extends ConsumerStatefulWidget {
@@ -52,6 +54,10 @@ class _JobCardWidgetState extends ConsumerState<JobCardWidget>
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(firebaseUserProvider).value;
+    final hasApplied = user != null
+        ? (ref.watch(hasAppliedProvider(widget.job.id)).value ?? false)
+        : false;
     final matchAsync = ref.watch(jobMatchResultProvider(widget.job.id));
     return AnimatedBuilder(
       animation: _scaleAnim,
@@ -164,6 +170,7 @@ class _JobCardWidgetState extends ConsumerState<JobCardWidget>
                 spacing: 6,
                 runSpacing: 6,
                 children: [
+                  if (hasApplied) _appliedBadge(),
                   _tag(Icons.location_on_outlined, widget.job.location,
                       AppColors.textSecondary),
                   _tag(Icons.work_outline_rounded,
@@ -247,6 +254,33 @@ class _JobCardWidgetState extends ConsumerState<JobCardWidget>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _appliedBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.success.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle_rounded,
+              size: 12, color: AppColors.success),
+          const SizedBox(width: 4),
+          Text(
+            'Applied',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.success,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

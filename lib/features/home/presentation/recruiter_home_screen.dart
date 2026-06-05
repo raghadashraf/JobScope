@@ -6,6 +6,7 @@ import 'post_job_screen.dart';
 import '../../recruiter/presentation/recruiter_analytics_screen.dart';
 import '../../recruiter/presentation/recruiter_jobs_screen.dart';
 import '../../notifications/data/notification_providers.dart';
+import '../data/recruiter_home_providers.dart';
 import 'profile_screen.dart';
 import 'widgets/app_nav_bar.dart';
 
@@ -19,7 +20,6 @@ class RecruiterHomeScreen extends ConsumerStatefulWidget {
 
 class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen>
     with TickerProviderStateMixin {
-  int _currentIndex = 0;
 
   static const _navItems = [
     NavItem(icon: Icons.dashboard_rounded, outlinedIcon: Icons.dashboard_outlined, label: 'Dashboard'),
@@ -67,22 +67,27 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen>
   }
 
   void _onTap(int i) {
-    if (i == _currentIndex) return;
-    _iconCtrls[_currentIndex].reverse();
-    setState(() => _currentIndex = i);
-    _iconCtrls[i].forward();
+    if (i == ref.read(recruiterTabIndexProvider)) return;
+    ref.read(recruiterTabIndexProvider.notifier).select(i);
   }
 
   @override
   Widget build(BuildContext context) {
     ref.watch(fcmBootstrapProvider);
+    final tabIndex = ref.watch(recruiterTabIndexProvider);
+    ref.listen(recruiterTabIndexProvider, (prev, next) {
+      if (prev != null && prev != next) {
+        _iconCtrls[prev].reverse();
+        _iconCtrls[next].forward();
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(index: tabIndex, children: _screens),
       bottomNavigationBar: AppNavBar(
         items: _navItems,
-        currentIndex: _currentIndex,
+        currentIndex: tabIndex,
         onTap: _onTap,
         accent: AppColors.secondary,
         iconScales: _iconScales,

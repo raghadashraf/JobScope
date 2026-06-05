@@ -9,6 +9,7 @@ import '../../../data/models/application_model.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../notifications/data/notification_providers.dart';
+import '../data/recruiter_home_providers.dart';
 import '../../recruiter/data/recruiter_providers.dart';
 
 class RecruiterDashboardScreen extends ConsumerStatefulWidget {
@@ -214,7 +215,14 @@ class _RecruiterDashboardScreenState
                     // ── Active jobs banner ──────────────────────────────────
                     _animated(
                       1,
-                      Container(
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => ref
+                              .read(recruiterTabIndexProvider.notifier)
+                              .select(2),
+                          borderRadius: BorderRadius.circular(22),
+                          child: Container(
                         padding: const EdgeInsets.all(22),
                         decoration: BoxDecoration(
                           gradient: AppColors.secondaryGradient,
@@ -277,6 +285,8 @@ class _RecruiterDashboardScreenState
                                   color: Colors.white, size: 28),
                             ),
                           ],
+                        ),
+                          ),
                         ),
                       ),
                     ),
@@ -498,7 +508,9 @@ class _RecruiterDashboardScreenState
     );
   }
 
-  Widget _activityTile(ApplicationModel app) => Padding(
+  Widget _activityTile(ApplicationModel app) => InkWell(
+        onTap: () => context.push(AppRoutes.applicantDetail, extra: app),
+        child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
@@ -542,6 +554,7 @@ class _RecruiterDashboardScreenState
             const SizedBox(width: 8),
             ApplicationStatusBadge(status: app.status),
           ],
+        ),
         ),
       );
 

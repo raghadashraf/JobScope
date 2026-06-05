@@ -134,12 +134,6 @@ class ProfileScreen extends ConsumerWidget {
                           title: 'Help & Support',
                           onTap: () => context.push(AppRoutes.help),
                         ),
-                        _MenuTileData(
-                          icon: Icons.star_outline_rounded,
-                          iconColor: const Color(0xFFF59E0B),
-                          title: 'Rate JobScope',
-                          onTap: () => context.push(AppRoutes.about),
-                        ),
                       ]),
 
                       const SizedBox(height: 24),
