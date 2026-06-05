@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/user_model.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../auth/data/profile_photo_providers.dart';
+import '../../auth/data/profile_photo_storage.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -128,6 +131,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                           // Avatar overlapping header
                           Center(
                             child: _AvatarSection(
+                              uid: ref.read(firebaseUserProvider).value?.uid ?? '',
                               imageBytes: _newImageBytes,
                               photoUrl: _currentPhotoUrl,
                               name: _nameCtrl.text,
@@ -400,6 +404,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
     );
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
+    final uid = ref.read(firebaseUserProvider).value?.uid;
+    if (uid != null) {
+      await ProfilePhotoStorage.save(uid, bytes);
+      ref.read(profilePhotoLocalCacheProvider.notifier).cache(uid, bytes);
+      ref.invalidate(profilePhotoPersistedBytesProvider(uid));
+    }
     setState(() => _newImageBytes = bytes);
   }
 
@@ -412,14 +422,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
       final repo = ref.read(authRepositoryProvider);
 
       String? photoUrl = _currentPhotoUrl;
+      Uint8List? savedBytes = _newImageBytes;
       if (_newImageBytes != null) {
         photoUrl = await repo.uploadProfilePhoto(
           uid: firebaseUser.uid,
           imageBytes: _newImageBytes!,
         );
+        ref
+            .read(profilePhotoLocalCacheProvider.notifier)
+            .cache(firebaseUser.uid, _newImageBytes!);
       }
 
-      await repo.updateProfile(
+      final updatedUser = await repo.updateProfile(
         uid: firebaseUser.uid,
         name: _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
@@ -437,10 +451,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             _companyCtrl.text.trim().isEmpty ? null : _companyCtrl.text.trim(),
       );
 
-      ref.invalidate(currentUserProvider);
+      if (savedBytes != null) {
+        await ProfilePhotoStorage.save(firebaseUser.uid, savedBytes);
+        ref
+            .read(profilePhotoLocalCacheProvider.notifier)
+            .cache(firebaseUser.uid, savedBytes);
+      }
+      ref.invalidate(profilePhotoPersistedBytesProvider(firebaseUser.uid));
+      ref.invalidate(profilePhotoBytesProvider(firebaseUser.uid));
+
+      ref.read(currentUserProvider.notifier).setUser(updatedUser);
+
       if (mounted) {
         _showSnack('Profile updated!', isError: false);
-        Navigator.pop(context);
+        Navigator.pop(context, updatedUser);
       }
     } catch (e) {
       if (mounted) {
@@ -467,7 +491,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 }
 
 // ── Avatar section widget ─────────────────────────────────────────────────────
-class _AvatarSection extends StatelessWidget {
+class _AvatarSection extends ConsumerWidget {
+  final String uid;
   final Uint8List? imageBytes;
   final String? photoUrl;
   final String name;
@@ -475,6 +500,7 @@ class _AvatarSection extends StatelessWidget {
   final Color accent;
 
   const _AvatarSection({
+    required this.uid,
     required this.imageBytes,
     required this.photoUrl,
     required this.name,
@@ -483,7 +509,7 @@ class _AvatarSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: onTap,
       child: Stack(
@@ -502,14 +528,14 @@ class _AvatarSection extends StatelessWidget {
                 ),
               ],
             ),
-            child: ClipOval(
-              child: imageBytes != null
-                  ? Image.memory(imageBytes!, fit: BoxFit.cover)
-                  : (photoUrl != null && photoUrl!.isNotEmpty
-                      ? Image.network(photoUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, _) => _fallback())
-                      : _fallback()),
+            child: UserAvatar(
+              uid: uid,
+              name: name,
+              photoUrl: photoUrl,
+              memoryBytes: imageBytes,
+              size: 90,
+              fallbackColor: Colors.white.withValues(alpha: 0.2),
+              fallbackTextColor: Colors.white,
             ),
           ),
           Positioned(
@@ -530,17 +556,6 @@ class _AvatarSection extends StatelessWidget {
       ),
     );
   }
-
-  Widget _fallback() => Container(
-        color: Colors.white.withValues(alpha: 0.2),
-        child: Center(
-          child: Text(
-            name.isNotEmpty ? name[0].toUpperCase() : '?',
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 32, fontWeight: FontWeight.w800, color: Colors.white),
-          ),
-        ),
-      );
 }
 
 // ── Arc clipper ───────────────────────────────────────────────────────────────

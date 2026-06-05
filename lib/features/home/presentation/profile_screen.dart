@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_router.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../applications/data/application_providers.dart';
@@ -376,28 +377,16 @@ class _ProfileHero extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipOval(
-        child: (user.photoUrl != null && user.photoUrl!.isNotEmpty)
-            ? Image.network(user.photoUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _avatarFallback(user.name))
-            : _avatarFallback(user.name),
+      child: UserAvatar(
+        uid: user.uid,
+        name: user.name,
+        photoUrl: user.photoUrl,
+        size: 88,
+        fallbackColor: Colors.white.withValues(alpha: 0.25),
+        fallbackTextColor: Colors.white,
       ),
     );
   }
-
-  Widget _avatarFallback(String name) => Container(
-        color: Colors.white.withValues(alpha: 0.25),
-        child: Center(
-          child: Text(
-            name.isNotEmpty ? name[0].toUpperCase() : '?',
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: Colors.white),
-          ),
-        ),
-      );
 
   Widget _statItem(String value, String label) => Expanded(
         child: Column(

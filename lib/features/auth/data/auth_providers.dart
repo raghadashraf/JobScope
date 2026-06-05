@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/user_model.dart';
 import 'auth_repository.dart';
+import 'profile_photo_providers.dart';
+import 'profile_photo_storage.dart';
 
 // ── Repository singleton ───────────────────────────────────────────────────────
 final authRepositoryProvider =
@@ -18,20 +20,28 @@ final firebaseUserProvider = StreamProvider<User?>((ref) {
 class AuthNotifier extends AsyncNotifier<UserModel?> {
   @override
   Future<UserModel?> build() async {
-    // Re-run whenever the Firebase auth state changes.
-    final firebaseUser = await ref.watch(firebaseUserProvider.future);
+    // Only react to sign-in / sign-out (uid change), not displayName/photoURL
+    // updates — those were overwriting profile edits after save.
+    final uid = ref.watch(
+      firebaseUserProvider.select((async) => async.value?.uid),
+    );
 
-    if (firebaseUser == null) return null;
+    if (uid == null) return null;
 
-    final repo = ref.read(authRepositoryProvider);
+    // Wait for Firebase Auth session restore to finish (critical on Chrome reload).
+    await ref.watch(firebaseUserProvider.future);
 
-    // If the cache already has this user (set by signIn/signUp before this
-    // rebuild runs), return it immediately — no Firestore fetch needed.
-    final cached = repo.cachedUser;
-    if (cached != null && cached.uid == firebaseUser.uid) return cached;
-
-    // Session restore path: fetch the user doc from Firestore.
-    return repo.getCurrentUserData();
+    final user = await ref.read(authRepositoryProvider).getCurrentUserData();
+    if (user != null) {
+      final persisted = await ProfilePhotoStorage.load(user.uid);
+      if (persisted != null && persisted.isNotEmpty) {
+        ref.read(profilePhotoLocalCacheProvider.notifier).cache(user.uid, persisted);
+      } else {
+        // One-time download from Storage → save locally for future reloads.
+        ref.read(profilePhotoBytesProvider(user.uid).future).ignore();
+      }
+    }
+    return user;
   }
 
   /// Call this immediately after signIn() or signUp() returns so the router

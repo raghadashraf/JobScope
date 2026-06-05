@@ -6,10 +6,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/utils/firestore_helpers.dart';
 import '../../../data/models/user_model.dart';
+import 'profile_photo_storage.dart';
 
-// SharedPreferences key — stores the role string for the last signed-in UID.
+// SharedPreferences keys — survive Chrome reload for the last signed-in UID.
 const _kRoleKey = 'user_role';
-const _kUidKey  = 'user_uid';
+const _kUidKey = 'user_uid';
+const _kPhotoUrlKey = 'user_photo_url';
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -40,6 +42,48 @@ class AuthRepository {
       (r) => r.name == roleStr,
       orElse: () => UserRole.candidate,
     );
+  }
+
+  Future<void> _savePhotoUrlLocally(String uid, String? photoUrl) async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedUid = prefs.getString(_kUidKey);
+    if (savedUid != null && savedUid != uid) return;
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      if (savedUid == null) await prefs.setString(_kUidKey, uid);
+      await prefs.setString(_kPhotoUrlKey, photoUrl);
+    } else {
+      await prefs.remove(_kPhotoUrlKey);
+    }
+  }
+
+  Future<String?> _loadPhotoUrlLocally(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getString(_kUidKey) != uid) return null;
+    return prefs.getString(_kPhotoUrlKey);
+  }
+
+  UserModel _userFromFirestoreDoc(
+    String uid,
+    Map<String, dynamic> raw, {
+    required String fallbackEmail,
+    required UserRole fallbackRole,
+  }) {
+    final data = Map<String, dynamic>.from(raw);
+    data['uid'] ??= uid;
+    data['email'] ??= fallbackEmail;
+    data['role'] ??= fallbackRole.name;
+    return UserModel.fromMap(data);
+  }
+
+  /// On web reload, Firestore/Storage may run before the auth token is ready.
+  Future<void> _waitForAuthReady(User firebaseUser) async {
+    for (var attempt = 0; attempt < 5; attempt++) {
+      try {
+        final token = await firebaseUser.getIdToken(attempt == 0);
+        if (token != null && token.isNotEmpty) return;
+      } catch (_) {}
+      await Future.delayed(Duration(milliseconds: 350 * (attempt + 1)));
+    }
   }
 
   // ── Retry helper — channel-error on Flutter Web means the Firebase Auth JS
@@ -147,9 +191,15 @@ class AuthRepository {
           .timeout(const Duration(seconds: 10));
 
       if (doc.exists) {
-        final user = UserModel.fromMap(doc.data()!);
+        final user = _userFromFirestoreDoc(
+          uid,
+          doc.data()!,
+          fallbackEmail: cred.user!.email ?? email.trim(),
+          fallbackRole: fallbackRole,
+        );
         _cachedUser = user;
         await _saveRoleLocally(uid, user.role);
+        await _savePhotoUrlLocally(uid, user.photoUrl);
         return user;
       }
     } catch (_) {
@@ -158,6 +208,7 @@ class AuthRepository {
 
     // 3. Firestore failed or doc missing — try locally persisted role.
     final localRole = await _loadRoleLocally(uid);
+    final localPhotoUrl = await _loadPhotoUrlLocally(uid);
     final resolvedRole = localRole ?? fallbackRole;
 
     final user = UserModel(
@@ -165,6 +216,7 @@ class AuthRepository {
       email: cred.user!.email ?? email.trim(),
       name: cred.user!.displayName ?? email.split('@').first,
       role: resolvedRole,
+      photoUrl: localPhotoUrl,
       createdAt: DateTime.now(),
     );
     _cachedUser = user;
@@ -184,42 +236,70 @@ class AuthRepository {
     final firebaseUser = _auth.currentUser;
     if (firebaseUser == null) return null;
 
-    // Memory cache hit.
+    await _waitForAuthReady(firebaseUser);
+
     if (_cachedUser != null && _cachedUser!.uid == firebaseUser.uid) {
-      return _cachedUser;
+      return _mergeLocalPhotoUrl(_cachedUser!);
     }
 
-    // Try Firestore.
-    try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .get()
-          .timeout(const Duration(seconds: 10));
+    final localRole =
+        await _loadRoleLocally(firebaseUser.uid) ?? UserRole.candidate;
 
-      if (doc.exists) {
-        _cachedUser = UserModel.fromMap(doc.data()!);
-        await _saveRoleLocally(firebaseUser.uid, _cachedUser!.role);
-        return _cachedUser;
+    for (var attempt = 0; attempt < 4; attempt++) {
+      try {
+        final doc = await _firestore
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .get()
+            .timeout(const Duration(seconds: 10));
+
+        if (doc.exists) {
+          _cachedUser = _userFromFirestoreDoc(
+            firebaseUser.uid,
+            doc.data()!,
+            fallbackEmail: firebaseUser.email ?? '',
+            fallbackRole: localRole,
+          );
+          await _saveRoleLocally(firebaseUser.uid, _cachedUser!.role);
+          await _savePhotoUrlLocally(firebaseUser.uid, _cachedUser!.photoUrl);
+          return _cachedUser;
+        }
+        break;
+      } catch (_) {
+        if (attempt < 3) {
+          await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+          await _waitForAuthReady(firebaseUser);
+        }
       }
-    } catch (_) {
-      // Firestore unreachable — fall through.
     }
 
-    // Firestore unavailable — fall back to locally persisted role.
-    final localRole = await _loadRoleLocally(firebaseUser.uid);
-    if (localRole != null) {
+    // Firestore unavailable on cold start — use locally persisted role + photo.
+    final localPhotoUrl = await _loadPhotoUrlLocally(firebaseUser.uid);
+    final localRoleValue = await _loadRoleLocally(firebaseUser.uid);
+    if (localRoleValue != null || localPhotoUrl != null) {
       _cachedUser = UserModel(
         uid: firebaseUser.uid,
         email: firebaseUser.email ?? '',
-        name: firebaseUser.displayName ?? firebaseUser.email?.split('@').first ?? 'User',
-        role: localRole,
+        name: firebaseUser.displayName ??
+            firebaseUser.email?.split('@').first ??
+            'User',
+        role: localRoleValue ?? UserRole.candidate,
+        photoUrl: localPhotoUrl,
         createdAt: DateTime.now(),
       );
       return _cachedUser;
     }
 
     return null;
+  }
+
+  Future<UserModel> _mergeLocalPhotoUrl(UserModel user) async {
+    if (user.photoUrl != null && user.photoUrl!.isNotEmpty) return user;
+    final localPhotoUrl = await _loadPhotoUrlLocally(user.uid);
+    if (localPhotoUrl == null) return user;
+    final merged = user.copyWith(photoUrl: localPhotoUrl);
+    _cachedUser = merged;
+    return merged;
   }
 
   // ── Sign out ───────────────────────────────────────────────────────────────
@@ -241,6 +321,7 @@ class AuthRepository {
     required String uid,
     required Uint8List imageBytes,
   }) async {
+    await ProfilePhotoStorage.save(uid, imageBytes);
     final ref = _storage.ref().child('profile_photos').child('$uid.jpg');
     final task = await ref.putData(
       imageBytes,
@@ -250,7 +331,7 @@ class AuthRepository {
   }
 
   // ── Profile update ─────────────────────────────────────────────────────────
-  Future<void> updateProfile({
+  Future<UserModel> updateProfile({
     required String uid,
     required String name,
     required String? phone,
@@ -262,7 +343,7 @@ class AuthRepository {
     String? website,
     String? company,
   }) async {
-    await _firestore.collection('users').doc(uid).update({
+    final profileFields = firestoreEncode({
       'name': name,
       'phone': phone,
       'photoUrl': photoUrl,
@@ -272,25 +353,58 @@ class AuthRepository {
       'linkedinUrl': linkedinUrl,
       'website': website,
       'company': company,
-      'profile': {
-        'name': name,
-        'phone': phone,
-        'photoUrl': photoUrl,
-        'bio': bio,
-        'headline': headline,
-        'location': location,
-        'linkedinUrl': linkedinUrl,
-        'website': website,
-        'company': company,
-      },
-    }).timeout(const Duration(seconds: 10));
-    await _auth.currentUser
-        ?.updateDisplayName(name)
-        .timeout(const Duration(seconds: 10));
-    if (photoUrl != null) {
-      await _auth.currentUser
-          ?.updatePhotoURL(photoUrl)
-          .timeout(const Duration(seconds: 10));
-    }
+    });
+
+    await firestoreWrite(
+      _firestore.collection('users').doc(uid).set(
+            firestoreEncode({
+              'uid': uid,
+              ...profileFields,
+              if (profileFields.isNotEmpty) 'profile': profileFields,
+            }),
+            SetOptions(merge: true),
+          ),
+    );
+
+    final base = _cachedUser?.uid == uid
+        ? _cachedUser!
+        : UserModel(
+            uid: uid,
+            email: _auth.currentUser?.email ?? '',
+            name: name,
+            role: (await _loadRoleLocally(uid)) ?? UserRole.candidate,
+            createdAt: DateTime.now(),
+          );
+
+    UserModel updated = UserModel(
+      uid: base.uid,
+      email: base.email,
+      name: name,
+      role: base.role,
+      photoUrl: photoUrl,
+      phone: phone,
+      bio: bio,
+      headline: headline,
+      location: location,
+      linkedinUrl: linkedinUrl,
+      website: website,
+      company: company,
+      createdAt: base.createdAt,
+    );
+
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        final data = Map<String, dynamic>.from(doc.data()!);
+        data['uid'] ??= uid;
+        data['email'] ??= base.email;
+        data['role'] ??= base.role.name;
+        updated = UserModel.fromMap(data);
+      }
+    } catch (_) {}
+
+    _cachedUser = updated;
+    await _savePhotoUrlLocally(uid, updated.photoUrl);
+    return updated;
   }
 }
