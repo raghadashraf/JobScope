@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CvModel {
+  /// Firestore doc id in `users/{uid}/cvs/{id}`.
+  final String id;
   final String uid;
   final String fileUrl;
   final String fileName;
+  final String storagePath;
   final DateTime uploadedAt;
   final List<String> skills;
   final List<WorkExperience> workExperience;
@@ -11,9 +14,11 @@ class CvModel {
   final int profileStrength; // 0–100
 
   CvModel({
+    this.id = '',
     required this.uid,
     required this.fileUrl,
     required this.fileName,
+    this.storagePath = '',
     required this.uploadedAt,
     required this.skills,
     required this.workExperience,
@@ -21,10 +26,14 @@ class CvModel {
     required this.profileStrength,
   });
 
+  bool get hasFile => fileUrl.isNotEmpty;
+
   Map<String, dynamic> toMap() => {
+        'id': id,
         'uid': uid,
         'fileUrl': fileUrl,
         'fileName': fileName,
+        'storagePath': storagePath,
         'uploadedAt': Timestamp.fromDate(uploadedAt),
         'skills': skills,
         'workExperience': workExperience.map((e) => e.toMap()).toList(),
@@ -32,10 +41,13 @@ class CvModel {
         'profileStrength': profileStrength,
       };
 
-  factory CvModel.fromMap(Map<String, dynamic> map) => CvModel(
+  factory CvModel.fromMap(Map<String, dynamic> map, {String? docId}) =>
+      CvModel(
+        id: docId ?? map['id'] ?? '',
         uid: map['uid'] ?? '',
         fileUrl: map['fileUrl'] ?? '',
         fileName: map['fileName'] ?? '',
+        storagePath: map['storagePath'] ?? '',
         uploadedAt:
             (map['uploadedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         skills: List<String>.from(map['skills'] ?? []),
@@ -46,6 +58,29 @@ class CvModel {
             .map((e) => Education.fromMap(Map<String, dynamic>.from(e)))
             .toList(),
         profileStrength: map['profileStrength'] ?? 0,
+      );
+
+  CvModel copyWith({
+    String? id,
+    String? fileUrl,
+    String? fileName,
+    String? storagePath,
+    List<String>? skills,
+    List<WorkExperience>? workExperience,
+    List<Education>? education,
+    int? profileStrength,
+  }) =>
+      CvModel(
+        id: id ?? this.id,
+        uid: uid,
+        fileUrl: fileUrl ?? this.fileUrl,
+        fileName: fileName ?? this.fileName,
+        storagePath: storagePath ?? this.storagePath,
+        uploadedAt: uploadedAt,
+        skills: skills ?? this.skills,
+        workExperience: workExperience ?? this.workExperience,
+        education: education ?? this.education,
+        profileStrength: profileStrength ?? this.profileStrength,
       );
 }
 

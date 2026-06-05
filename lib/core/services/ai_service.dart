@@ -98,16 +98,21 @@ class AiService {
     List<String> skills = const [],
   }) async {
     final prompt = '''
-You are an expert interviewer. Generate 5 scenario-based interview questions for a $jobTitle position.
-${skills.isNotEmpty ? 'Key skills required: ${skills.join(', ')}.' : ''}
+You are an expert interview coach specializing in behavioral interviews.
+Generate exactly 5 behavioral interview questions for a $jobTitle position.
+At least 3 questions must use the STAR method (Situation, Task, Action, Result).
+${skills.isNotEmpty ? 'Key skills to assess: ${skills.join(', ')}.' : ''}
 ${jobDescription != null && jobDescription.isNotEmpty ? 'Job context: $jobDescription' : ''}
+
+Each question should feel realistic (team conflict, deadline pressure, leadership, failure recovery, prioritization).
+In sampleAnswer, include a STAR-structured response AND one interview tip (e.g. body language, specificity, metrics).
 
 Return ONLY a valid JSON array — no markdown, no explanation:
 [
   {
-    "question": "Technical or behavioral question",
-    "scenario": "Brief scenario context (1-2 sentences)",
-    "sampleAnswer": "A strong sample answer (3-5 sentences)"
+    "question": "Behavioral question text",
+    "scenario": "Brief workplace scenario (1-2 sentences)",
+    "sampleAnswer": "STAR sample answer (3-5 sentences). Tip: one practical interview tip."
   }
 ]
 ''';

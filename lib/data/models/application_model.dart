@@ -20,6 +20,12 @@ class ApplicationModel {
   final String candidateEmail;
   final String? candidatePhotoUrl;
   final String? cvUrl;
+  final String? cvId;
+  final String? cvFileName;
+  final String? coverLetterText;
+  final String? coverLetterFileUrl;
+  final String? coverLetterFileName;
+  final String? coverLetterSource;
   final ApplicationStatus status;
   final DateTime appliedAt;
   final DateTime? updatedAt;
@@ -36,6 +42,12 @@ class ApplicationModel {
     required this.candidateEmail,
     this.candidatePhotoUrl,
     this.cvUrl,
+    this.cvId,
+    this.cvFileName,
+    this.coverLetterText,
+    this.coverLetterFileUrl,
+    this.coverLetterFileName,
+    this.coverLetterSource,
     required this.status,
     required this.appliedAt,
     this.updatedAt,
@@ -53,6 +65,12 @@ class ApplicationModel {
         'candidateEmail': candidateEmail,
         'candidatePhotoUrl': candidatePhotoUrl,
         'cvUrl': cvUrl,
+        'cvId': cvId,
+        'cvFileName': cvFileName,
+        'coverLetterText': coverLetterText,
+        'coverLetterFileUrl': coverLetterFileUrl,
+        'coverLetterFileName': coverLetterFileName,
+        'coverLetterSource': coverLetterSource,
         'status': status.name,
         'appliedAt': Timestamp.fromDate(appliedAt),
         'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
@@ -72,6 +90,12 @@ class ApplicationModel {
         candidateEmail: map['candidateEmail'] ?? '',
         candidatePhotoUrl: map['candidatePhotoUrl'],
         cvUrl: map['cvUrl'],
+        cvId: map['cvId'],
+        cvFileName: map['cvFileName'],
+        coverLetterText: map['coverLetterText'],
+        coverLetterFileUrl: map['coverLetterFileUrl'],
+        coverLetterFileName: map['coverLetterFileName'],
+        coverLetterSource: map['coverLetterSource'],
         status: _parseStatus(map['status']),
         appliedAt:
             (map['appliedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -96,6 +120,12 @@ class ApplicationModel {
     String? candidateEmail,
     Object? candidatePhotoUrl = _sentinel,
     Object? cvUrl = _sentinel,
+    Object? cvId = _sentinel,
+    Object? cvFileName = _sentinel,
+    Object? coverLetterText = _sentinel,
+    Object? coverLetterFileUrl = _sentinel,
+    Object? coverLetterFileName = _sentinel,
+    Object? coverLetterSource = _sentinel,
     ApplicationStatus? status,
     DateTime? appliedAt,
     Object? updatedAt = _sentinel,
@@ -114,6 +144,21 @@ class ApplicationModel {
             ? this.candidatePhotoUrl
             : candidatePhotoUrl as String?,
         cvUrl: cvUrl == _sentinel ? this.cvUrl : cvUrl as String?,
+        cvId: cvId == _sentinel ? this.cvId : cvId as String?,
+        cvFileName:
+            cvFileName == _sentinel ? this.cvFileName : cvFileName as String?,
+        coverLetterText: coverLetterText == _sentinel
+            ? this.coverLetterText
+            : coverLetterText as String?,
+        coverLetterFileUrl: coverLetterFileUrl == _sentinel
+            ? this.coverLetterFileUrl
+            : coverLetterFileUrl as String?,
+        coverLetterFileName: coverLetterFileName == _sentinel
+            ? this.coverLetterFileName
+            : coverLetterFileName as String?,
+        coverLetterSource: coverLetterSource == _sentinel
+            ? this.coverLetterSource
+            : coverLetterSource as String?,
         status: status ?? this.status,
         appliedAt: appliedAt ?? this.appliedAt,
         updatedAt:
@@ -140,6 +185,15 @@ class ApplicationModel {
 
   bool get isActive =>
       status != ApplicationStatus.withdrawn;
+
+  /// Counted on job cards and recruiter applicant totals.
+  bool get countsTowardJobApplicantTotal =>
+      status != ApplicationStatus.rejected &&
+      status != ApplicationStatus.withdrawn;
+
+  bool get hasCoverLetter =>
+      (coverLetterText != null && coverLetterText!.trim().isNotEmpty) ||
+      (coverLetterFileUrl != null && coverLetterFileUrl!.isNotEmpty);
 
   /// UI label "Under Review" — Firestore value is still `pending`.
   bool get canWithdraw => status == ApplicationStatus.pending;
