@@ -2,7 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 const _sentinel = Object();
 
-enum ApplicationStatus { pending, shortlisted, rejected, accepted }
+enum ApplicationStatus {
+  pending,
+  shortlisted,
+  rejected,
+  accepted,
+  withdrawn,
+}
 
 class ApplicationModel {
   final String id;
@@ -66,10 +72,7 @@ class ApplicationModel {
         candidateEmail: map['candidateEmail'] ?? '',
         candidatePhotoUrl: map['candidatePhotoUrl'],
         cvUrl: map['cvUrl'],
-        status: ApplicationStatus.values.firstWhere(
-          (e) => e.name == map['status'],
-          orElse: () => ApplicationStatus.pending,
-        ),
+        status: _parseStatus(map['status']),
         appliedAt:
             (map['appliedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
@@ -130,6 +133,35 @@ class ApplicationModel {
         return 'Not Selected';
       case ApplicationStatus.accepted:
         return 'Accepted';
+      case ApplicationStatus.withdrawn:
+        return 'Withdrawn';
+    }
+  }
+
+  bool get isActive =>
+      status != ApplicationStatus.withdrawn;
+
+  /// UI label "Under Review" — Firestore value is still `pending`.
+  bool get canWithdraw => status == ApplicationStatus.pending;
+
+  static ApplicationStatus _parseStatus(dynamic raw) {
+    final s = (raw?.toString() ?? '').toLowerCase().replaceAll(' ', '_');
+    switch (s) {
+      case 'pending':
+      case 'under_review':
+      case 'underreview':
+        return ApplicationStatus.pending;
+      case 'shortlisted':
+        return ApplicationStatus.shortlisted;
+      case 'rejected':
+      case 'not_selected':
+        return ApplicationStatus.rejected;
+      case 'accepted':
+        return ApplicationStatus.accepted;
+      case 'withdrawn':
+        return ApplicationStatus.withdrawn;
+      default:
+        return ApplicationStatus.pending;
     }
   }
 }

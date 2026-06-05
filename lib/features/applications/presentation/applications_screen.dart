@@ -124,7 +124,8 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen>
                         apps: apps
                             .where((a) =>
                                 a.status == ApplicationStatus.accepted ||
-                                a.status == ApplicationStatus.rejected)
+                                a.status == ApplicationStatus.rejected ||
+                                a.status == ApplicationStatus.withdrawn)
                             .toList(),
                         onTap: (a) => _openDetail(context, a)),
                   ],

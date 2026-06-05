@@ -5,6 +5,7 @@ import 'recruiter_dashboard_screen.dart';
 import 'post_job_screen.dart';
 import '../../recruiter/presentation/recruiter_analytics_screen.dart';
 import '../../recruiter/presentation/recruiter_jobs_screen.dart';
+import '../../notifications/data/notification_providers.dart';
 import 'profile_screen.dart';
 import 'widgets/app_nav_bar.dart';
 
@@ -74,6 +75,8 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(fcmTokenSyncProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: IndexedStack(index: _currentIndex, children: _screens),

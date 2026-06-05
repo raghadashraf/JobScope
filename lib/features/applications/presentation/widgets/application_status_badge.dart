@@ -81,6 +81,13 @@ class ApplicationStatusBadge extends StatelessWidget {
           dot: AppColors.error,
           text: AppColors.error,
         );
+      case ApplicationStatus.withdrawn:
+        return _BadgeConfig(
+          bg: AppColors.textTertiary.withValues(alpha: 0.12),
+          border: AppColors.border,
+          dot: AppColors.textTertiary,
+          text: AppColors.textSecondary,
+        );
     }
   }
 }
@@ -106,6 +113,8 @@ extension ApplicationStatusLabel on ApplicationStatus {
         return 'Accepted';
       case ApplicationStatus.rejected:
         return 'Not Selected';
+      case ApplicationStatus.withdrawn:
+        return 'Withdrawn';
     }
   }
 
@@ -119,6 +128,8 @@ extension ApplicationStatusLabel on ApplicationStatus {
         return Icons.check_circle_rounded;
       case ApplicationStatus.rejected:
         return Icons.cancel_rounded;
+      case ApplicationStatus.withdrawn:
+        return Icons.undo_rounded;
     }
   }
 }

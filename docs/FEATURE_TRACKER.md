@@ -34,8 +34,8 @@ Living log of shipped work. **Update this file at the end of every feature slice
 | H4 | Rahma | Recruiter analytics | 🟡 | [H4](#h4-recruiter-analytics) |
 | D0 | David | Prerequisite fixes | ⬜ | [DAVID_PLAN.md](./DAVID_PLAN.md) |
 | D1 | David | AI training module | ✅ | [D1](#d1-ai-training-module) |
-| D2 | David | Apply flow + status | 🟡 | [D2](#d2-apply-flow--acceptreject) |
-| D3 | David | Notifications (FCM) | 🟡 | [D3](#d3-notifications-fcm) |
+| D2 | David | Apply flow + status | ✅ | [D2](#d2-apply-flow--acceptreject) |
+| D3 | David | Notifications (FCM) | 🟡 | [D3](#d3-notifications-system--fcm) |
 | D4 | David | Settings + dark mode | ⬜ | [D4](#d4-settings--dark-mode) |
 
 ---
@@ -251,51 +251,78 @@ Living log of shipped work. **Update this file at the end of every feature slice
 
 ### D2 — Apply flow + accept/reject (9 tasks + D0-1)
 
-**Status:** 🟡
+**Status:** ✅
 
 | # | Original task | Status | Notes |
 |---|---------------|--------|-------|
 | — | **D0-1:** Persist `matchScore` on apply | ✅ | `ApplyNotifier` + `ApplicationRepository.apply` |
 | 1 | Add "Apply" button on job details | ✅ | `job_detail_screen.dart` |
 | 2 | Create application in Firestore | ✅ | `application_repository.apply` |
-| 3 | Define states (pending/shortlisted/accepted/rejected) | ✅ | `ApplicationStatus` |
+| 3 | Define states (pending/shortlisted/accepted/rejected) | ✅ | `ApplicationStatus` + `withdrawn` |
 | 4 | Build recruiter accept/reject buttons | ✅ | `applicant_detail_screen`, list cards |
-| 5 | Update status in Firestore | ✅ | `updateStatus` |
+| 5 | Update status in Firestore | ✅ | `updateStatus` + `updatedAt` |
 | 6 | Build application history screen (Candidate) | ✅ | `applications_screen.dart` |
 | 7 | Add status badges with colors | ✅ | `application_status_badge.dart` |
-| 8 | Add withdraw application feature | ✅ | Deletes doc — may revise to `withdrawn` |
-| 9 | Build application timeline view | ✅ | `application_detail_screen.dart` |
+| 8 | Add withdraw application feature | ✅ | **D2-b:** `status: withdrawn` (not delete); can re-apply |
+| 9 | Build application timeline view | ✅ | **D2-c:** dates from `appliedAt` / `updatedAt`; live stream |
+
+**Why tracker was 🟡 while rows were ✅:** Core apply flow was built by the team before David’s pass; section stayed **partial** until polish slices **D2-b** (withdraw semantics) and **D2-c** (timeline + live updates) shipped.
 
 **Key files:** `application_repository.dart`, `application_providers.dart`, `applications_screen.dart`, `application_detail_screen.dart`, `job_detail_screen.dart`
 
 #### Implementation log
 
-*D0-1 done 2026-06-04. See D0 implementation log.*
+### D2 — polish — 2026-06-05
+
+**Slices:** D2-b withdrawn status; D2-c timeline dates + `applicationByIdProvider` live stream.
+
+**Files:** `application_model.dart`, `application_repository.dart`, `application_providers.dart`, `application_detail_screen.dart`, `application_status_badge.dart`, `applications_screen.dart`, `recruiter_providers.dart`
+
+**Test:** [TEST_CASES.md](./TEST_CASES.md) D2 — automated 7/7 ✅; manual UI/Firestore rows pending human sign-off.
+
+### Test record — D2 — 2026-06-05
+
+- Automated: `flutter test test/d2_apply_flow_test.dart` → **7/7 pass**
+- Manual: TEST_CASES.md D2 table — ⬜ pending (Chrome + R/C demo accounts)
+- Firestore checks: `applications/{id}` — `shortlisted` / `rejected` / `withdrawn` + `updatedAt`
 
 ---
 
 ### D3 — Notifications system — FCM (8 tasks)
 
-**Status:** 🟡 (~25%)
+**Status:** 🟡 (~85% — inbox MVP done; Cloud Function push = phase 2)
 
 | # | Original task | Status | Notes |
 |---|---------------|--------|-------|
-| 1 | Setup Firebase Cloud Messaging | 🟡 | `notification_service.dart` — token only |
-| 2 | Request notification permissions | 🟡 | Partial in FCM + local init |
-| 3 | Send push on status change | ⬜ | Phase 2: Cloud Function; v1: in-app + local |
-| 4 | Send push on new job match | ⬜ | **Replaced:** recruiter alert on new application (TC-N1) |
-| 5 | Build in-app notification screen | ⬜ | D3-3 |
-| 6 | Add notification badge with unread count | ⬜ | D3-4 |
-| 7 | Implement mark as read/unread | ⬜ | D3-5 |
-| 8 | Add delete notification feature | ⬜ | D3-5 |
+| 1 | Setup Firebase Cloud Messaging | 🟡 | `notification_service.dart` + `fcmTokenSyncProvider` (mobile) |
+| 2 | Request notification permissions | 🟡 | FCM `requestPermission` on token sync |
+| 3 | Send push on status change | 🟡 | v1: Firestore inbox + `LocalNotificationService`; push = Function |
+| 4 | Send push on new job match | ✅ | **Replaced:** recruiter inbox on new apply (TC-N1) |
+| 5 | Build in-app notification screen | ✅ | `notifications_screen.dart` + route |
+| 6 | Add notification badge with unread count | ✅ | Profile tile `_UnreadBadge` |
+| 7 | Implement mark as read/unread | ✅ | Tap = read; long-press = toggle unread |
+| 8 | Add delete notification feature | ✅ | Swipe to dismiss |
 
-**Firestore (planned):** `users/{uid}/notifications/{id}`
+**Firestore:** `users/{uid}/notifications/{id}`
+
+**Triggers:** apply → recruiter; `updateStatus` → candidate
 
 **Tests:** [TEST_CASES.md](./TEST_CASES.md) TC-N1–N4
 
 #### Implementation log
 
-*Baseline 2026-06-04.*
+### D3 — In-app inbox — 2026-06-05
+
+**Slices:** D3-1…D3-5 (+ partial D3-6 FCM token on `users/{uid}.fcmToken`).
+
+**Files:**
+- `lib/data/models/notification_model.dart`
+- `lib/data/repositories/notification_repository.dart`
+- `lib/features/notifications/data/notification_providers.dart`
+- `lib/features/notifications/presentation/notifications_screen.dart`
+- `application_repository.dart`, `application_providers.dart`, `profile_screen.dart`, `app_router.dart`
+
+**Kept:** `LocalNotificationService` on candidate home (foreground status change).
 
 ---
 

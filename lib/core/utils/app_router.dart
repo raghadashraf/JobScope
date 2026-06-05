@@ -29,6 +29,7 @@ import '../../features/home/presentation/candidate_interviews_screen.dart';
 import '../../features/messaging/data/messaging_providers.dart';
 import '../../features/messaging/presentation/conversations_screen.dart';
 import '../../features/messaging/presentation/chat_screen.dart';
+import '../../features/notifications/presentation/notifications_screen.dart';
 
 // ─── Route paths ──────────────────────────────────────────────────────────────
 class AppRoutes {
@@ -54,6 +55,7 @@ class AppRoutes {
   static const candidateInterviews = '/candidate-interviews';
   static const conversations = '/conversations';
   static const chat = '/chat';
+  static const notifications = '/notifications';
 }
 
 // ─── Auth guard notifier ──────────────────────────────────────────────────────
@@ -216,6 +218,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             state.extra is ChatParams ? null : AppRoutes.conversations,
         builder: (_, state) =>
             ChatScreen(params: state.extra as ChatParams),
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (_, _) => const NotificationsScreen(),
       ),
     ],
   );

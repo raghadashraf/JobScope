@@ -9,6 +9,7 @@ import '../../applications/data/application_providers.dart';
 import 'dashboard_screen.dart';
 import '../../job_listing/presentation/jobs_screen.dart';
 import '../../applications/presentation/applications_screen.dart';
+import '../../notifications/data/notification_providers.dart';
 import 'profile_screen.dart';
 import 'widgets/app_nav_bar.dart';
 
@@ -79,6 +80,8 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(fcmTokenSyncProvider);
+
     ref.listen<AsyncValue<List<ApplicationModel>>>(myApplicationsProvider,
         (_, next) {
       next.whenData((apps) {

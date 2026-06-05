@@ -12,6 +12,8 @@ class ApplicationDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final liveAsync = ref.watch(applicationByIdProvider(application.id));
+    final app = liveAsync.value ?? application;
     final withdrawing = ref.watch(withdrawNotifierProvider);
 
     return Scaffold(
@@ -36,13 +38,28 @@ class ApplicationDetailScreen extends ConsumerWidget {
             style: GoogleFonts.plusJakartaSans(
                 fontSize: 18, fontWeight: FontWeight.w700)),
         centerTitle: false,
+        actions: [
+          if (app.canWithdraw)
+            IconButton(
+              tooltip: 'Withdraw application',
+              onPressed: withdrawing
+                  ? null
+                  : () => _confirmWithdraw(context, ref, app),
+              icon: withdrawing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.undo_rounded, color: AppColors.error),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Company + job header ─────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -63,8 +80,8 @@ class ApplicationDetailScreen extends ConsumerWidget {
                     ),
                     child: Center(
                       child: Text(
-                        application.company.isNotEmpty
-                            ? application.company[0].toUpperCase()
+                        app.company.isNotEmpty
+                            ? app.company[0].toUpperCase()
                             : '?',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 24,
@@ -80,7 +97,7 @@ class ApplicationDetailScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          application.jobTitle,
+                          app.jobTitle,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
@@ -89,7 +106,7 @@ class ApplicationDetailScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          application.company,
+                          app.company,
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             color: AppColors.textSecondary,
@@ -103,47 +120,42 @@ class ApplicationDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // ── Status card ──────────────────────────────────────────────
-            _StatusCard(status: application.status),
+            _StatusCard(status: app.status),
             const SizedBox(height: 16),
-
-            // ── Application timeline ─────────────────────────────────────
             _sectionTitle('Application Timeline'),
             const SizedBox(height: 12),
-            _TimelineWidget(status: application.status),
+            _TimelineWidget(application: app),
             const SizedBox(height: 24),
-
-            // ── Details ──────────────────────────────────────────────────
             _sectionTitle('Application Details'),
             const SizedBox(height: 12),
             _detailRow(Icons.calendar_today_rounded, 'Applied On',
-                _formatDate(application.appliedAt)),
+                _formatDate(app.appliedAt)),
+            if (app.updatedAt != null &&
+                app.status != ApplicationStatus.pending)
+              _detailRow(Icons.update_rounded, 'Last Updated',
+                  _formatDate(app.updatedAt!)),
             _detailRow(Icons.person_outline_rounded, 'Applicant',
-                application.candidateName),
-            _detailRow(
-                Icons.email_outlined, 'Email', application.candidateEmail),
-            if (application.cvUrl != null)
-              _detailRow(
-                  Icons.description_outlined, 'CV', 'Attached'),
+                app.candidateName),
+            _detailRow(Icons.email_outlined, 'Email', app.candidateEmail),
+            if (app.cvUrl != null)
+              _detailRow(Icons.description_outlined, 'CV', 'Attached'),
             const SizedBox(height: 32),
-
-            // ── Withdraw button ───────────────────────────────────────────
-            if (application.status == ApplicationStatus.pending)
+            if (app.canWithdraw)
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: withdrawing
                       ? null
-                      : () => _confirmWithdraw(context, ref),
+                      : () => _confirmWithdraw(context, ref, app),
                   icon: withdrawing
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child:
-                              CircularProgressIndicator(strokeWidth: 2))
+                          child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.undo_rounded, size: 18),
-                  label: Text(withdrawing ? 'Withdrawing...' : 'Withdraw Application'),
+                  label: Text(withdrawing
+                      ? 'Withdrawing...'
+                      : 'Withdraw (Under Review only)'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: BorderSide(
@@ -203,7 +215,8 @@ class ApplicationDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmWithdraw(BuildContext context, WidgetRef ref) {
+  void _confirmWithdraw(
+      BuildContext context, WidgetRef ref, ApplicationModel app) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -212,7 +225,7 @@ class ApplicationDetailScreen extends ConsumerWidget {
         title: Text('Withdraw Application?',
             style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
         content: Text(
-          'Are you sure you want to withdraw your application for ${application.jobTitle} at ${application.company}?',
+          'Your application for ${app.jobTitle} at ${app.company} will be marked withdrawn. You can apply again later.',
           style: GoogleFonts.inter(
               fontSize: 14, color: AppColors.textSecondary),
         ),
@@ -225,10 +238,20 @@ class ApplicationDetailScreen extends ConsumerWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await ref
+              final error = await ref
                   .read(withdrawNotifierProvider.notifier)
-                  .withdraw(application.id);
-              if (context.mounted) Navigator.pop(context);
+                  .withdraw(app.id);
+              if (!context.mounted) return;
+              if (error != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(error),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
@@ -250,7 +273,6 @@ class ApplicationDetailScreen extends ConsumerWidget {
   }
 }
 
-// ── Status card ───────────────────────────────────────────────────────────────
 class _StatusCard extends StatelessWidget {
   final ApplicationStatus status;
   const _StatusCard({required this.status});
@@ -289,7 +311,8 @@ class _StatusCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(config.description,
                     style: GoogleFonts.inter(
-                        fontSize: 12, color: config.text.withValues(alpha: 0.75))),
+                        fontSize: 12,
+                        color: config.text.withValues(alpha: 0.75))),
               ],
             ),
           ),
@@ -322,7 +345,8 @@ class _StatusCard extends StatelessWidget {
           border: AppColors.success.withValues(alpha: 0.2),
           text: AppColors.success,
           iconColor: AppColors.success,
-          description: 'You\'ve been accepted! The recruiter will contact you soon.',
+          description:
+              'You\'ve been accepted! The recruiter will contact you soon.',
         );
       case ApplicationStatus.rejected:
         return _StatusCardConfig(
@@ -331,6 +355,14 @@ class _StatusCard extends StatelessWidget {
           text: AppColors.error,
           iconColor: AppColors.error,
           description: 'This application was not successful. Keep applying!',
+        );
+      case ApplicationStatus.withdrawn:
+        return _StatusCardConfig(
+          bg: AppColors.surfaceVariant,
+          border: AppColors.border,
+          text: AppColors.textSecondary,
+          iconColor: AppColors.textTertiary,
+          description: 'You withdrew this application. You may apply again.',
         );
     }
   }
@@ -348,33 +380,79 @@ class _StatusCardConfig {
   });
 }
 
-// ── Timeline widget ───────────────────────────────────────────────────────────
 class _TimelineWidget extends StatelessWidget {
-  final ApplicationStatus status;
-  const _TimelineWidget({required this.status});
+  final ApplicationModel application;
+  const _TimelineWidget({required this.application});
 
   @override
   Widget build(BuildContext context) {
-    final steps = [
-      _TimelineStep('Applied', ApplicationStatus.pending),
-      _TimelineStep('Under Review', ApplicationStatus.pending),
-      _TimelineStep('Shortlisted', ApplicationStatus.shortlisted),
-      _TimelineStep('Final Decision', ApplicationStatus.accepted),
+    final status = application.status;
+    final steps = <_TimelineStepData>[
+      _TimelineStepData(
+        label: 'Applied',
+        date: application.appliedAt,
+        reached: true,
+      ),
+      _TimelineStepData(
+        label: 'Under Review',
+        date: status == ApplicationStatus.pending
+            ? null
+            : application.updatedAt,
+        reached: status != ApplicationStatus.withdrawn,
+      ),
+      _TimelineStepData(
+        label: status == ApplicationStatus.rejected
+            ? 'Not Selected'
+            : 'Shortlisted',
+        date: _statusDate(
+          status,
+          const {
+            ApplicationStatus.shortlisted,
+            ApplicationStatus.accepted,
+            ApplicationStatus.rejected,
+          },
+        ),
+        reached: const {
+          ApplicationStatus.shortlisted,
+          ApplicationStatus.accepted,
+          ApplicationStatus.rejected,
+        }.contains(status),
+      ),
+      _TimelineStepData(
+        label: status == ApplicationStatus.withdrawn
+            ? 'Withdrawn'
+            : 'Final Decision',
+        date: _statusDate(
+          status,
+          const {
+            ApplicationStatus.accepted,
+            ApplicationStatus.rejected,
+            ApplicationStatus.withdrawn,
+          },
+        ),
+        reached: const {
+          ApplicationStatus.accepted,
+          ApplicationStatus.rejected,
+          ApplicationStatus.withdrawn,
+        }.contains(status),
+      ),
     ];
 
-    final currentIndex = _stepIndex(status);
+    final currentIndex = steps.lastIndexWhere((s) => s.reached);
+    final isRejected = status == ApplicationStatus.rejected;
+    final isWithdrawn = status == ApplicationStatus.withdrawn;
 
     return Column(
       children: List.generate(steps.length, (i) {
-        final isDone = i <= currentIndex;
-        final isRejected =
-            status == ApplicationStatus.rejected && i > 1;
+        final step = steps[i];
+        final isDone = step.reached;
         final isActive = i == currentIndex;
+        final showRejectStyle = isRejected && i >= 2;
+        final showWithdrawStyle = isWithdrawn && i == steps.length - 1;
 
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Circle + line
             Column(
               children: [
                 Container(
@@ -382,14 +460,18 @@ class _TimelineWidget extends StatelessWidget {
                   height: 24,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isRejected
-                        ? AppColors.error
+                    color: showRejectStyle || showWithdrawStyle
+                        ? (showWithdrawStyle
+                            ? AppColors.textTertiary
+                            : AppColors.error)
                         : isDone
                             ? AppColors.primary
                             : AppColors.surfaceVariant,
                     border: Border.all(
-                      color: isRejected
-                          ? AppColors.error
+                      color: showRejectStyle || showWithdrawStyle
+                          ? (showWithdrawStyle
+                              ? AppColors.textTertiary
+                              : AppColors.error)
                           : isDone
                               ? AppColors.primary
                               : AppColors.border,
@@ -397,9 +479,14 @@ class _TimelineWidget extends StatelessWidget {
                     ),
                   ),
                   child: Center(
-                    child: isRejected
-                        ? const Icon(Icons.close,
-                            size: 12, color: Colors.white)
+                    child: showRejectStyle || showWithdrawStyle
+                        ? Icon(
+                            showWithdrawStyle
+                                ? Icons.undo_rounded
+                                : Icons.close,
+                            size: 12,
+                            color: Colors.white,
+                          )
                         : isDone
                             ? const Icon(Icons.check,
                                 size: 12, color: Colors.white)
@@ -409,8 +496,8 @@ class _TimelineWidget extends StatelessWidget {
                 if (i < steps.length - 1)
                   Container(
                     width: 2,
-                    height: 32,
-                    color: isDone && !isRejected
+                    height: 40,
+                    color: isDone && !showRejectStyle
                         ? AppColors.primary.withValues(alpha: 0.3)
                         : AppColors.border,
                   ),
@@ -418,12 +505,12 @@ class _TimelineWidget extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Padding(
-              padding: const EdgeInsets.only(top: 2, bottom: 32),
+              padding: const EdgeInsets.only(top: 2, bottom: 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isRejected && i > 1 ? 'Not Selected' : steps[i].label,
+                    step.label,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight:
@@ -435,7 +522,11 @@ class _TimelineWidget extends StatelessWidget {
                               : AppColors.textTertiary,
                     ),
                   ),
-                  if (isActive)
+                  if (step.date != null)
+                    Text(_formatDate(step.date!),
+                        style: GoogleFonts.inter(
+                            fontSize: 11, color: AppColors.textTertiary)),
+                  if (isActive && step.date == null)
                     Text('Current stage',
                         style: GoogleFonts.inter(
                             fontSize: 11, color: AppColors.textTertiary)),
@@ -448,22 +539,28 @@ class _TimelineWidget extends StatelessWidget {
     );
   }
 
-  int _stepIndex(ApplicationStatus s) {
-    switch (s) {
-      case ApplicationStatus.pending:
-        return 1;
-      case ApplicationStatus.shortlisted:
-        return 2;
-      case ApplicationStatus.accepted:
-        return 3;
-      case ApplicationStatus.rejected:
-        return 2;
-    }
+  DateTime? _statusDate(
+      ApplicationStatus current, Set<ApplicationStatus> match) {
+    if (!match.contains(current)) return null;
+    return application.updatedAt ?? application.appliedAt;
+  }
+
+  String _formatDate(DateTime d) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
 }
 
-class _TimelineStep {
+class _TimelineStepData {
   final String label;
-  final ApplicationStatus status;
-  const _TimelineStep(this.label, this.status);
+  final DateTime? date;
+  final bool reached;
+  const _TimelineStepData({
+    required this.label,
+    required this.date,
+    required this.reached,
+  });
 }

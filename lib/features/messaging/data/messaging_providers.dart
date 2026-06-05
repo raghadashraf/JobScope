@@ -4,6 +4,7 @@ import '../../../core/utils/firestore_helpers.dart';
 import '../../../data/models/conversation_model.dart';
 import '../../../data/models/direct_message_model.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../notifications/data/notification_providers.dart';
 
 final _db = appFirestore;
 
@@ -106,6 +107,20 @@ class MessagingNotifier extends AsyncNotifier<void> {
       SetOptions(merge: true),
     );
     await batch.commit();
+
+    try {
+      await ref.read(notificationRepositoryProvider).notifyNewMessage(
+            recipientId: recipientId,
+            senderId: senderId,
+            senderName: senderName,
+            conversationId: convId,
+            messagePreview: text,
+            jobTitle: jobTitle,
+            applicationId: applicationId,
+          );
+    } catch (_) {
+      // Message delivered; inbox notification is best-effort.
+    }
   }
 
   Future<void> markRead(String convId, String myUid) async {

@@ -96,6 +96,8 @@ lib/
 | `conversations/{id}` | DM metadata; subcollection `messages/{id}` |
 | `cover_letters/{id}` | Generated cover letter cache |
 | `users/{uid}/training_sessions/{id}` | Train-before-apply: questions, answers, readinessScore, isComplete |
+| `users/{uid}/notifications/{id}` | In-app inbox: `type`, `title`, `body`, `read`, `createdAt`, `relatedId` |
+| `users/{uid}.fcmToken` | FCM device token (mobile; optional until Cloud Function push) |
 
 Enums and field names must match `lib/data/models/*.dart` `toMap()` / `fromMap()`.
 

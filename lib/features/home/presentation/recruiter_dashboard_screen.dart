@@ -8,6 +8,7 @@ import '../../messaging/data/messaging_providers.dart';
 import '../../../data/models/application_model.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../notifications/data/notification_providers.dart';
 import '../../recruiter/data/recruiter_providers.dart';
 
 class RecruiterDashboardScreen extends ConsumerStatefulWidget {
@@ -197,33 +198,13 @@ class _RecruiterDashboardScreenState
                               ],
                             ),
                           ),
-                          // Notification bell
-                          Stack(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: const Icon(Icons.notifications_outlined,
-                                    color: AppColors.textPrimary),
-                              ),
-                              Positioned(
-                                right: 8, top: 8,
-                                child: Container(
-                                  width: 10, height: 10,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.error,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: AppColors.surface, width: 2),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          _NotificationBellButton(
+                            unreadCount: ref
+                                    .watch(unreadNotificationsCountProvider)
+                                    .value ??
+                                0,
+                            onTap: () =>
+                                context.push(AppRoutes.notifications),
                           ),
                         ],
                       ),
@@ -601,4 +582,62 @@ class _RecruiterDashboardScreenState
           ],
         ),
       );
+}
+
+class _NotificationBellButton extends StatelessWidget {
+  final int unreadCount;
+  final VoidCallback onTap;
+
+  const _NotificationBellButton({
+    required this.unreadCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Icon(Icons.notifications_outlined,
+                color: AppColors.textPrimary),
+          ),
+          if (unreadCount > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                decoration: BoxDecoration(
+                  color: AppColors.error,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.surface, width: 2),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  unreadCount > 99 ? '99+' : '$unreadCount',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

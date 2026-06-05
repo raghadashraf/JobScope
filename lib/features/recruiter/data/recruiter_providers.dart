@@ -72,7 +72,10 @@ final recruiterAllApplicationsStreamProvider =
       .where('jobId', whereIn: jobIds)
       .snapshots()
       .map((snap) {
-        final apps = snap.docs.map(ApplicationModel.fromDoc).toList();
+        final apps = snap.docs
+            .map(ApplicationModel.fromDoc)
+            .where((a) => a.isActive)
+            .toList();
         apps.sort((a, b) => b.appliedAt.compareTo(a.appliedAt));
         return apps;
       });

@@ -1,6 +1,6 @@
 # Manual Test Cases (Demo Scripts)
 
-Run after each slice ([FEATURE_GUIDE.md](./FEATURE_GUIDE.md) §3). Use **Firebase Console** (`jobscope-app`) to verify writes.
+Run after each slice ([FEATURE_GUIDE.md](./FEATURE_GUIDE.md) §3). Use **Firebase Console** → project **JobScope** (`flutter-ai-playground-2379c`) → database **`jobscope`** → verify writes.
 
 **Agents:** no git commands; if you changed shared code, run regression rows for affected features below.
 
@@ -76,9 +76,36 @@ Check [FEATURE_TRACKER.md](./FEATURE_TRACKER.md) for ✅/🟡 before coding.
 | 2 | R | Applicants → open C → **Shortlist** | Firestore `status: shortlisted`, `updatedAt` set |
 | 3 | C | Applications tab (or pull refresh) | Status **Shortlisted**; optional local notification if app open |
 | 4 | R | **Reject** another test applicant (or same after reset) | `status: rejected` |
-| 5 | C | Pending application → **Withdraw** (if available) | Doc removed or withdrawn per implementation |
+| 5 | C | Pending application → **Withdraw** (if available) | Firestore `status: withdrawn`, `updatedAt` set; doc kept; can re-apply |
 
 **Regression:** Apply + bookmark + job detail still work on another job.
+
+**Automated (run anytime):**
+
+```bash
+flutter test test/d2_apply_flow_test.dart
+```
+
+### D2 — Test record — 2026-06-05
+
+| Step | Type | Result | Evidence |
+|------|------|--------|----------|
+| 1 | Manual UI | ⬜ Pending human | C → bottom nav **Applications** → open app → badge **Under Review**; timeline step **Under Review** |
+| 2 | Manual + Firestore | ⬜ Pending human | R → **Applicants** → open C → **Shortlist** → `applications/{id}`: `status: shortlisted`, `updatedAt` present |
+| 3 | Manual UI | ⬜ Pending human | C → Applications → same app shows **Shortlisted** (live stream; no refresh required) |
+| 4 | Manual + Firestore | ⬜ Pending human | R → **Reject** → `status: rejected`, `updatedAt` set |
+| 5 | Manual + Firestore | ⬜ Pending human | C → pending app → **Withdraw** → `status: withdrawn` (doc **not** deleted); apply same job again → succeeds |
+| Regression | Manual UI | ⬜ Pending human | Second job: Apply + bookmark + job detail unchanged |
+| Automated | `flutter test` | ✅ Pass | 7/7 in `test/d2_apply_flow_test.dart` (status/withdrawn/isActive/labels/payload) |
+
+**Code verification (agent, 2026-06-05):**
+
+- Applications tab uses `features/applications/applications_screen.dart` (not home stub).
+- Shortlist/reject: `application_repository.updateStatus` sets `updatedAt`.
+- Withdraw: `withdraw()` sets `status: withdrawn`, not delete; `hasApplied` ignores withdrawn.
+- Detail: `applicationByIdProvider` live-updates status/timeline.
+
+**Sign-off:** Mark manual rows ✅ after one Chrome + incognito run with demo accounts above.
 
 ---
 
@@ -106,7 +133,7 @@ Check [FEATURE_TRACKER.md](./FEATURE_TRACKER.md) for ✅/🟡 before coding.
 |------|-------|--------|----------|
 | 1 | R | Post **new** job “Backend Demo” (skills: `Node`) | Job live |
 | 2 | C | (Optional: second CV or same CV) Apply to **Backend Demo** | New `applications` doc |
-| 3 | R | Profile → **Notifications** (when wired) | New item: e.g. “New application from …” |
+| 3 | R | Profile → **Notifications** | New item: e.g. “New application from …” |
 | 4 | — | Firestore `users/{R_uid}/notifications` | New doc `type: new_application`, `read: false` |
 
 ### TC-N2 — Candidate: status change
@@ -135,6 +162,22 @@ Check [FEATURE_TRACKER.md](./FEATURE_TRACKER.md) for ✅/🟡 before coding.
 | 2 | R | Edit job title only | C does not get spurious status notification (unless you designed for it) |
 
 **FCM (D3-6, later):** Same TC-N1/N2 with app **killed** on device — only passes after Cloud Function sends push; document skip if not deployed.
+
+**Automated:**
+
+```bash
+flutter test test/d3_notifications_test.dart
+```
+
+### D3 — Test record — 2026-06-05
+
+| Case | Type | Result | Notes |
+|------|------|--------|-------|
+| TC-N1 | Manual | ⬜ Pending | R inbox after C applies |
+| TC-N2 | Manual | ⬜ Pending | C inbox after R shortlists; local banner may still show |
+| TC-N3 | Manual | ⬜ Pending | Badge, mark read, swipe delete |
+| TC-N4 | Manual | ⬜ Pending | No false positives |
+| Automated | `flutter test` | ✅ Pass | `test/d3_notifications_test.dart` |
 
 ---
 

@@ -1,16 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/application_model.dart';
+import '../../../data/models/job_model.dart';
 import '../../../data/repositories/application_repository.dart';
 import '../../ai_features/data/ai_providers.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
 import '../../job_listing/data/job_providers.dart';
+import '../../notifications/data/notification_providers.dart';
 
 // ─── Repository provider ──────────────────────────────────────────────────────
 final applicationRepositoryProvider =
     Provider<ApplicationRepository>((_) => ApplicationRepository());
 
 // ─── Stream: current candidate's applications ─────────────────────────────────
+/// Live application doc (status / timeline updates without leaving detail screen).
+final applicationByIdProvider =
+    StreamProvider.autoDispose.family<ApplicationModel?, String>((ref, id) {
+  return ref.read(applicationRepositoryProvider).applicationStream(id);
+});
+
 final myApplicationsProvider =
     StreamProvider<List<ApplicationModel>>((ref) {
   final user = ref.watch(firebaseUserProvider).value;
@@ -81,8 +89,9 @@ class ApplyNotifier extends Notifier<ApplyState> {
 
     try {
       int? matchScore;
+      JobModel? job;
       if (cv != null && cv.skills.isNotEmpty) {
-        final job = await ref.read(jobRepositoryProvider).fetchJob(jobId);
+        job = await ref.read(jobRepositoryProvider).fetchJob(jobId);
         if (job != null) {
           try {
             final result = await ref
@@ -94,6 +103,7 @@ class ApplyNotifier extends Notifier<ApplyState> {
           }
         }
       }
+      job ??= await ref.read(jobRepositoryProvider).fetchJob(jobId);
 
       final application = await ref
           .read(applicationRepositoryProvider)
@@ -108,6 +118,16 @@ class ApplyNotifier extends Notifier<ApplyState> {
             cvUrl: cv?.fileUrl,
             matchScore: matchScore,
           );
+
+      if (job != null) {
+        try {
+          await ref
+              .read(notificationActionsProvider)
+              .notifyRecruiterNewApplication(job: job, application: application);
+        } catch (_) {
+          // In-app notification is best-effort; apply already succeeded.
+        }
+      }
 
       state = ApplyState(
           status: ApplyStatus.success, application: application);
@@ -134,12 +154,19 @@ class WithdrawNotifier extends Notifier<bool> {
   @override
   bool build() => false;
 
-  Future<void> withdraw(String applicationId) async {
+  Future<String?> withdraw(String applicationId) async {
+    final user = ref.read(firebaseUserProvider).value;
+    if (user == null) return 'Not logged in';
+
     state = true;
     try {
-      await ref
-          .read(applicationRepositoryProvider)
-          .withdraw(applicationId);
+      await ref.read(applicationRepositoryProvider).withdraw(
+            applicationId: applicationId,
+            candidateId: user.uid,
+          );
+      return null;
+    } on Exception catch (e) {
+      return e.toString().replaceFirst('Exception: ', '');
     } finally {
       state = false;
     }

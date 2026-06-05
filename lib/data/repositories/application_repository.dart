@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/utils/firestore_helpers.dart';
 import '../models/application_model.dart';
+import 'notification_repository.dart';
 
 class ApplicationRepository {
   final FirebaseFirestore _firestore = appFirestore;
+  final NotificationRepository _notifications = NotificationRepository();
 
   CollectionReference get _applications =>
       _firestore.collection('applications');
@@ -41,7 +43,9 @@ class ApplicationRepository {
       matchScore: matchScore,
     );
 
-    await doc.set(application.toMap()).timeout(const Duration(seconds: 10));
+    await firestoreWrite(
+      doc.set(firestoreEncode(application.toMap())),
+    );
     return application;
   }
 
@@ -55,7 +59,8 @@ class ApplicationRepository {
         .where('candidateId', isEqualTo: candidateId)
         .limit(1)
         .get();
-    return snap.docs.isNotEmpty;
+    if (snap.docs.isEmpty) return false;
+    return ApplicationModel.fromDoc(snap.docs.first).isActive;
   }
 
   // ─── Stream: check applied status in real-time ────────────────────────────
@@ -68,7 +73,18 @@ class ApplicationRepository {
         .where('candidateId', isEqualTo: candidateId)
         .limit(1)
         .snapshots()
-        .map((snap) => snap.docs.isNotEmpty);
+        .map((snap) {
+          if (snap.docs.isEmpty) return false;
+          return ApplicationModel.fromDoc(snap.docs.first).isActive;
+        });
+  }
+
+  // ─── Stream: single application (live updates for detail + timeline) ───────
+  Stream<ApplicationModel?> applicationStream(String applicationId) {
+    return _applications.doc(applicationId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return ApplicationModel.fromDoc(doc);
+    });
   }
 
   // ─── Stream: all applications for a candidate ─────────────────────────────
@@ -90,7 +106,10 @@ class ApplicationRepository {
         .where('jobId', isEqualTo: jobId)
         .snapshots()
         .map((snap) {
-          final apps = snap.docs.map(ApplicationModel.fromDoc).toList();
+          final apps = snap.docs
+              .map(ApplicationModel.fromDoc)
+              .where((a) => a.isActive)
+              .toList();
           apps.sort((a, b) => b.appliedAt.compareTo(a.appliedAt));
           return apps;
         });
@@ -101,7 +120,10 @@ class ApplicationRepository {
     return _applications
         .where('jobId', isEqualTo: jobId)
         .snapshots()
-        .map((snap) => snap.docs.length);
+        .map((snap) => snap.docs
+            .map(ApplicationModel.fromDoc)
+            .where((a) => a.isActive)
+            .length);
   }
 
   // ─── Update application status (recruiter action) ─────────────────────────
@@ -109,10 +131,23 @@ class ApplicationRepository {
     required String applicationId,
     required ApplicationStatus status,
   }) async {
-    await _applications.doc(applicationId).update({
+    final snap = await _applications.doc(applicationId).get();
+    if (!snap.exists) return;
+    final application = ApplicationModel.fromDoc(snap);
+
+    await firestoreWrite(_applications.doc(applicationId).update({
       'status': status.name,
       'updatedAt': FieldValue.serverTimestamp(),
-    }).timeout(const Duration(seconds: 10));
+    }));
+
+    try {
+      await _notifications.notifyCandidateStatusChange(
+        application: application,
+        newStatus: status,
+      );
+    } catch (_) {
+      // Status saved; inbox write is best-effort (rules/network).
+    }
   }
 
   // ─── Update recruiter notes on an application ─────────────────────────────
@@ -120,10 +155,10 @@ class ApplicationRepository {
     required String applicationId,
     required String notes,
   }) async {
-    await _applications.doc(applicationId).update({
+    await firestoreWrite(_applications.doc(applicationId).update({
       'notes': notes,
       'updatedAt': FieldValue.serverTimestamp(),
-    }).timeout(const Duration(seconds: 10));
+    }));
   }
 
   // ─── Fetch single application ─────────────────────────────────────────────
@@ -133,8 +168,29 @@ class ApplicationRepository {
     return ApplicationModel.fromDoc(doc);
   }
 
-  // ─── Withdraw application ─────────────────────────────────────────────────
-  Future<void> withdraw(String applicationId) async {
-    await _applications.doc(applicationId).delete().timeout(const Duration(seconds: 10));
+  // ─── Withdraw application (pending only; soft — keeps history) ───────────
+  Future<void> withdraw({
+    required String applicationId,
+    required String candidateId,
+  }) async {
+    final snap = await _applications.doc(applicationId).get();
+    if (!snap.exists) {
+      throw Exception('Application not found.');
+    }
+    final app = ApplicationModel.fromDoc(snap);
+    if (app.candidateId != candidateId) {
+      throw Exception('You can only withdraw your own applications.');
+    }
+    if (!app.canWithdraw) {
+      throw Exception(
+        'Only applications under review can be withdrawn. '
+        'Shortlisted or decided applications cannot be withdrawn.',
+      );
+    }
+
+    await firestoreWrite(_applications.doc(applicationId).update({
+      'status': ApplicationStatus.withdrawn.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }));
   }
 }

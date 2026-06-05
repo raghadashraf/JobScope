@@ -26,9 +26,9 @@ This plan orders work by **dependency and impact**. Many D2 items already exist�
 | Priority | ID | Task | Status |
 |----------|-----|------|--------|
 | **P0** | D0-1 | Persist `matchScore` on apply | ✅ |
-| P1 | D2-polish | Apply flow gaps (see below) | ⬜ |
+| P1 | D2-polish | Apply flow gaps (see below) | ✅ |
 | **P2** | **D1** | Train-before-apply module | ✅ |
-| **P3** | **D3** | Notifications system | ⬜ **START HERE** |
+| **P3** | **D3** | Notifications system | 🟡 inbox MVP done |
 | P4 | D4 | Settings + dark mode | ⬜ |
 
 **Update this table** when you finish a slice.
@@ -98,7 +98,7 @@ flowchart TD
 
 ## P1 — D2: Apply flow + recruiter status (polish, not greenfield)
 
-**Status:** 🟡 Partial — **do not reimplement from scratch**
+**Status:** ✅ — **do not reimplement from scratch**
 
 ### Already shipped (verify only)
 
@@ -110,7 +110,7 @@ flowchart TD
 | Recruiter shortlist/reject/accept | `applicant_detail_screen.dart`, `job_applicants_screen.dart` |
 | Candidate list + tabs | `applications_screen.dart` |
 | Status badges | `application_status_badge.dart` |
-| Withdraw | `withdrawNotifierProvider` (deletes doc) |
+| Withdraw | `withdrawNotifierProvider` → `status: withdrawn` |
 | Timeline UI | `application_detail_screen.dart` |
 
 ### David slices remaining
@@ -123,9 +123,9 @@ flowchart TD
 
 ### Acceptance criteria (remaining)
 
-- [ ] Recruiter status change sets `updatedAt`
-- [ ] Timeline reflects shortlisted/accepted/rejected dates (optional enhancement)
-- [ ] Document withdraw behavior in tracker
+- [x] Recruiter status change sets `updatedAt`
+- [x] Timeline reflects shortlisted/accepted/rejected dates via `updatedAt`
+- [x] Withdraw sets `status: withdrawn` (documented in tracker)
 
 ### Challenges log
 

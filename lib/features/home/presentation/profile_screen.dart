@@ -9,6 +9,7 @@ import '../../../data/models/user_model.dart';
 import '../../applications/data/application_providers.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
+import '../../notifications/data/notification_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -18,6 +19,8 @@ class ProfileScreen extends ConsumerWidget {
     final userAsync = ref.watch(currentUserProvider);
     final cvAsync = ref.watch(cvStreamProvider);
     final appsAsync = ref.watch(myApplicationsProvider);
+    final unreadAsync = ref.watch(unreadNotificationsCountProvider);
+    final unreadCount = unreadAsync.value ?? 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -95,7 +98,21 @@ class ProfileScreen extends ConsumerWidget {
                           icon: Icons.notifications_outlined,
                           iconColor: const Color(0xFFF59E0B),
                           title: 'Notifications',
-                          onTap: () {},
+                          trailing: unreadCount > 0
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _UnreadBadge(count: unreadCount),
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 14,
+                                        color: AppColors.textTertiary),
+                                  ],
+                                )
+                              : null,
+                          onTap: () =>
+                              context.push(AppRoutes.notifications),
                         ),
                         _MenuTileData(
                           icon: Icons.settings_outlined,
@@ -500,6 +517,31 @@ class _StatusBadge extends StatelessWidget {
               fontSize: 11,
               color: color,
               fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+class _UnreadBadge extends StatelessWidget {
+  final int count;
+  const _UnreadBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = count > 99 ? '99+' : '$count';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.error,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 }

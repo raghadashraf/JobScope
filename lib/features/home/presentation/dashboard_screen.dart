@@ -9,6 +9,7 @@ import '../../recruiter/data/interview_providers.dart';
 import '../../../data/models/application_model.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../applications/data/application_providers.dart';
+import '../../notifications/data/notification_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
 import '../../ai_features/data/ai_providers.dart';
 
@@ -24,9 +25,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   late final AnimationController _ctrl;
   late final List<Animation<double>> _fadeAnims;
   late final List<Animation<Offset>> _slideAnims;
-  late final AnimationController _pulseCtrl;
-  late final Animation<double> _pulseAnim;
-
   static const _sections = 5;
 
   @override
@@ -57,19 +55,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     });
 
     _ctrl.forward();
-
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 0.7, end: 1.35).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
-    );
   }
 
   @override
   void dispose() {
-    _pulseCtrl.dispose();
     _ctrl.dispose();
     super.dispose();
   }
@@ -374,7 +363,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return 'Good evening 👋';
   }
 
-  Widget _notificationBell() => Stack(
+  Widget _notificationBell() {
+    final unread = ref.watch(unreadNotificationsCountProvider).value ?? 0;
+    return InkWell(
+      onTap: () => context.push(AppRoutes.notifications),
+      borderRadius: BorderRadius.circular(12),
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Container(
             width: 44,
@@ -387,24 +382,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             child: const Icon(Icons.notifications_outlined,
                 color: AppColors.textPrimary),
           ),
-          Positioned(
-            right: 8,
-            top: 8,
-            child: ScaleTransition(
-              scale: _pulseAnim,
+          if (unread > 0)
+            Positioned(
+              right: -2,
+              top: -2,
               child: Container(
-                width: 10,
-                height: 10,
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                 decoration: BoxDecoration(
                   color: AppColors.error,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.surface, width: 2),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  unread > 99 ? '99+' : '$unread',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
-      );
+      ),
+    );
+  }
 
   Widget _cvCard({
     required BuildContext context,
