@@ -13,6 +13,7 @@ import '../../notifications/data/notification_providers.dart';
 import '../../settings/data/settings_providers.dart';
 import 'profile_screen.dart';
 import 'widgets/app_nav_bar.dart';
+import '../data/nav_providers.dart';
 
 class CandidateHomeScreen extends ConsumerStatefulWidget {
   const CandidateHomeScreen({super.key});
@@ -82,6 +83,10 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
   @override
   Widget build(BuildContext context) {
     ref.watch(fcmBootstrapProvider);
+
+    ref.listen(candidateTabProvider, (_, next) {
+      if (next != _currentIndex) _onTap(next);
+    });
 
     ref.listen<AsyncValue<List<ApplicationModel>>>(myApplicationsProvider,
         (_, next) {

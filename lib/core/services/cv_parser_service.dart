@@ -99,7 +99,7 @@ class CvParserService {
       skills: const [],
       workExperience: const [],
       education: const [],
-      profileStrength: 25,
+      profileStrength: 10,
     );
 
     return _insertCv(cvModel, storagePath: upload.storagePath);
@@ -217,7 +217,7 @@ class CvParserService {
       if (cvUrl == null || cvUrl.isEmpty) return;
 
       final fileName = _fileNameFromUrl(cvUrl);
-      final strength = (data?['profileStrength'] as num?)?.toInt() ?? 25;
+      final strength = (data?['profileStrength'] as num?)?.toInt() ?? 10;
       await _insertCv(
         CvModel(
           uid: uid,

@@ -330,15 +330,31 @@ $cvText
     List<Education> education,
   ) {
     int score = 0;
+
+    // File is present (caller always has a file at this point)
+    score += 10;
+
+    // Skills — 30 pts
     if (skills.isNotEmpty) score += 10;
     if (skills.length >= 5) score += 10;
     if (skills.length >= 10) score += 10;
-    if (skills.length >= 15) score += 10;
+
+    // Work Experience — 35 pts
     if (experience.isNotEmpty) score += 15;
     if (experience.length >= 2) score += 10;
-    if (experience.length >= 3) score += 10;
+    if (experience.length >= 3) score += 5;
+    final withDesc =
+        experience.where((e) => e.description.trim().length > 20).length;
+    if (experience.isNotEmpty && withDesc == experience.length) score += 5;
+
+    // Education — 25 pts
     if (education.isNotEmpty) score += 15;
-    if (education.length >= 2) score += 10;
+    final hasCompleteEntry = education.any((e) =>
+        e.degree.isNotEmpty &&
+        e.field.isNotEmpty &&
+        e.institution.isNotEmpty);
+    if (hasCompleteEntry) score += 10;
+
     return score.clamp(0, 100);
   }
 

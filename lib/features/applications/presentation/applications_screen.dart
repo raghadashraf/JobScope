@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_router.dart';
 import '../../../data/models/application_model.dart';
 import '../data/application_providers.dart';
+import '../../home/data/nav_providers.dart';
 import 'widgets/application_card_widget.dart';
 
 class ApplicationsScreen extends ConsumerStatefulWidget {
@@ -35,6 +36,10 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen>
   @override
   Widget build(BuildContext context) {
     final appsAsync = ref.watch(myApplicationsProvider);
+
+    ref.listen(applicationsTabProvider, (_, next) {
+      if (_tabCtrl.index != next) _tabCtrl.animateTo(next);
+    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -94,7 +99,7 @@ class _ApplicationsScreenState extends ConsumerState<ApplicationsScreen>
                   Tab(text: 'All'),
                   Tab(text: 'Review'),
                   Tab(text: 'Shortlisted'),
-                  Tab(text: 'Decided'),
+                  Tab(text: 'Accepted'),
                 ],
               ),
             ),

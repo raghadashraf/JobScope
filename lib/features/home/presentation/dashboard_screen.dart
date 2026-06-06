@@ -13,6 +13,7 @@ import '../../notifications/data/notification_providers.dart';
 import '../../cv_management/data/cv_providers.dart';
 import '../../../core/utils/open_file_url.dart';
 import '../../ai_features/data/ai_providers.dart';
+import '../data/nav_providers.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -237,7 +238,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                   icon: Icons.work_rounded,
                                   label: 'Job Matches',
                                   value: '–',
-                                  color: AppColors.primary)),
+                                  color: AppColors.primary,
+                                  onTap: () => context.push(AppRoutes.jobs))),
                           const SizedBox(width: 12),
                           Expanded(
                               child: _statCard(
@@ -245,7 +247,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                   label: 'Applied',
                                   value: '$appliedCount',
                                   color: AppColors.secondary,
-                                  count: appliedCount)),
+                                  count: appliedCount,
+                                  onTap: () {
+                                    ref.read(applicationsTabProvider.notifier).select(0);
+                                    ref.read(candidateTabProvider.notifier).select(2);
+                                  })),
                           const SizedBox(width: 12),
                           Expanded(
                               child: _statCard(
@@ -253,7 +259,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                   label: 'Shortlisted',
                                   value: '$shortlistedCount',
                                   color: AppColors.success,
-                                  count: shortlistedCount)),
+                                  count: shortlistedCount,
+                                  onTap: () {
+                                    ref.read(applicationsTabProvider.notifier).select(2);
+                                    ref.read(candidateTabProvider.notifier).select(2);
+                                  })),
                         ],
                       ),
                     ),
@@ -327,16 +337,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                 context.push(AppRoutes.candidateInterviews),
                           ),
                           const SizedBox(height: 12),
-                          _actionTileWithBadge(
-                            icon: Icons.chat_bubble_outline_rounded,
-                            iconColor: const Color(0xFF7C3AED),
-                            title: 'Messages',
-                            subtitle: 'Chat with recruiters',
-                            badge: ref.watch(totalUnreadProvider),
-                            onTap: () =>
-                                context.push(AppRoutes.conversations),
-                          ),
-                          const SizedBox(height: 12),
                           _actionTile(
                             icon: Icons.school_rounded,
                             iconColor: AppColors.accent,
@@ -344,18 +344,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             subtitle: 'Test your technical skills',
                             onTap: () =>
                                 context.push(AppRoutes.skillAssessment),
-                          ),
-                          const SizedBox(height: 12),
-                          _actionTile(
-                            icon: Icons.auto_awesome_rounded,
-                            iconColor: const Color(0xFF7C3AED),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
-                            ),
-                            title: 'AI Career Coach',
-                            subtitle: 'Get personalised job search advice',
-                            badge: 'New',
-                            onTap: () => context.push(AppRoutes.careerCoach),
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -652,8 +640,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     required String value,
     required Color color,
     int? count,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -696,6 +690,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   color: AppColors.textSecondary,
                   letterSpacing: 0.1)),
         ],
+      ),
+        ),
       ),
     );
   }
