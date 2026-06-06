@@ -54,6 +54,7 @@ class DefaultFirebaseOptions {
     appId: '1:1034661281054:android:604f72c65d181f777a5d0f',
     messagingSenderId: '1034661281054',
     projectId: 'flutter-ai-playground-2379c',
+    authDomain: 'flutter-ai-playground-2379c.firebaseapp.com',
     storageBucket: 'flutter-ai-playground-2379c.firebasestorage.app',
   );
 

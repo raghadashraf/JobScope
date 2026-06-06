@@ -150,17 +150,26 @@ final jobMatchNotificationServiceProvider =
     Provider<JobMatchNotificationService>(
         (_) => JobMatchNotificationService());
 
+bool _jobMatchNotificationsSynced = false;
+
 /// Scans active jobs vs candidate CV skills and creates inbox alerts (once per job).
 final jobMatchNotificationBootstrapProvider = Provider<void>((ref) {
   final user = ref.watch(firebaseUserProvider).value;
-  if (user == null) return;
+  if (user == null) {
+    _jobMatchNotificationsSynced = false;
+    return;
+  }
 
   Timer? debounce;
 
   Future<void> sync() async {
+    if (_jobMatchNotificationsSynced) return;
     if (!ref.read(notificationsEnabledProvider)) return;
     final cv = ref.read(cvStreamProvider).value;
     final jobs = ref.read(jobsStreamProvider).value ?? [];
+    if (jobs.isEmpty) return;
+
+    _jobMatchNotificationsSynced = true;
     await ref.read(jobMatchNotificationServiceProvider).syncMatchNotifications(
           candidateId: user.uid,
           cv: cv,
@@ -170,12 +179,17 @@ final jobMatchNotificationBootstrapProvider = Provider<void>((ref) {
   }
 
   void scheduleSync() {
+    if (_jobMatchNotificationsSynced) return;
     debounce?.cancel();
     debounce = Timer(const Duration(milliseconds: 800), sync);
   }
 
   ref.onDispose(() => debounce?.cancel());
-  ref.listen(jobsStreamProvider, (_, _) => scheduleSync());
-  ref.listen(cvStreamProvider, (_, _) => scheduleSync());
+  ref.listen(jobsStreamProvider, (_, next) {
+    if (next.hasValue) scheduleSync();
+  });
+  ref.listen(cvStreamProvider, (_, next) {
+    if (next.hasValue) scheduleSync();
+  });
   scheduleSync();
 });
