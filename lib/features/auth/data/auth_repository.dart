@@ -327,7 +327,9 @@ class AuthRepository {
       imageBytes,
       SettableMetadata(contentType: 'image/jpeg'),
     );
-    return task.ref.getDownloadURL();
+    final downloadUrl = await task.ref.getDownloadURL();
+    await _savePhotoUrlLocally(uid, downloadUrl);
+    return downloadUrl;
   }
 
   // ── Profile update ─────────────────────────────────────────────────────────
@@ -400,6 +402,11 @@ class AuthRepository {
         data['email'] ??= base.email;
         data['role'] ??= base.role.name;
         updated = UserModel.fromMap(data);
+        if ((updated.photoUrl == null || updated.photoUrl!.isEmpty) &&
+            photoUrl != null &&
+            photoUrl.isNotEmpty) {
+          updated = updated.copyWith(photoUrl: photoUrl);
+        }
       }
     } catch (_) {}
 

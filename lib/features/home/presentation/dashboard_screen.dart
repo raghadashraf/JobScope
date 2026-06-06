@@ -182,6 +182,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                               ],
                             ),
                           ),
+                          _headerIconButton(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            badge: ref.watch(totalUnreadProvider),
+                            onTap: () =>
+                                context.push(AppRoutes.conversations),
+                          ),
+                          const SizedBox(width: 8),
+                          _headerIconButton(
+                            icon: Icons.calendar_month_outlined,
+                            badge: ref.watch(pendingInterviewsCountProvider),
+                            onTap: () =>
+                                context.push(AppRoutes.candidateInterviews),
+                          ),
+                          const SizedBox(width: 8),
                           _notificationBell(),
                         ],
                       ),
@@ -364,10 +378,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return 'Good evening 👋';
   }
 
-  Widget _notificationBell() {
-    final unread = ref.watch(unreadNotificationsCountProvider).value ?? 0;
+  Widget _headerIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    int badge = 0,
+  }) {
     return InkWell(
-      onTap: () => context.push(AppRoutes.notifications),
+      onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Stack(
         clipBehavior: Clip.none,
@@ -380,10 +397,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: Icon(Icons.notifications_outlined,
-                color: AppColors.textPrimary),
+            child: Icon(icon, color: AppColors.textPrimary),
           ),
-          if (unread > 0)
+          if (badge > 0)
             Positioned(
               right: -2,
               top: -2,
@@ -397,7 +413,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  unread > 99 ? '99+' : '$unread',
+                  badge > 99 ? '99+' : '$badge',
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -408,6 +424,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
         ],
       ),
+    );
+  }
+
+  Widget _notificationBell() {
+    final unread = ref.watch(unreadNotificationsCountProvider).value ?? 0;
+    return _headerIconButton(
+      icon: Icons.notifications_outlined,
+      badge: unread,
+      onTap: () => context.push(AppRoutes.notifications),
     );
   }
 

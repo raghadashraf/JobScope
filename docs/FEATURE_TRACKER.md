@@ -121,6 +121,24 @@ Living log of shipped work. **Update this file at the end of every feature slice
 
 #### Implementation log
 
+### R4 — Profile photo camera + persistence — 2026-06-06
+
+**Slices:** Camera/gallery picker on edit profile; file-based local photo cache (mobile); photoUrl saved locally on upload.
+
+**Files:** `edit_profile_screen.dart`, `profile_photo_storage.dart`, `profile_photo_storage_io.dart`, `profile_photo_storage_web.dart`, `profile_photo_storage_platform.dart`, `auth_repository.dart`, `AndroidManifest.xml`, `ios/Runner/Info.plist`
+
+### R2 — Browse jobs back button — 2026-06-06
+
+**Slices:** Back button on `/jobs` when pushed from dashboard (hidden on Jobs tab).
+
+**Files:** `jobs_screen.dart`
+
+### Candidate dashboard header icons — 2026-06-06
+
+**Slices:** Messages + calendar icons beside notification bell on candidate dashboard.
+
+**Files:** `dashboard_screen.dart`
+
 *Baseline audit 2026-06-04.*
 
 ---
@@ -406,6 +424,22 @@ Living log of shipped work. **Update this file at the end of every feature slice
 | Messaging | `messaging_providers.dart` | `conversations`, `messages` |
 | Interviews | `interview_providers.dart` | `interviews` |
 | Career coach | `career_coach_providers.dart` | `users/{uid}/coach_chat` |
+
+---
+
+## Handoff — 2026-06-06 — @agent
+
+**Completed:** Candidate browse-jobs back button; profile photo camera picker + persistence fix; dashboard messages/calendar header icons
+
+**Files touched:** `jobs_screen.dart`, `edit_profile_screen.dart`, `profile_photo_storage*.dart`, `auth_repository.dart`, `dashboard_screen.dart`, `AndroidManifest.xml`, `ios/Runner/Info.plist`
+
+**Tracker updated:** R2, R4, dashboard icons
+
+**Verify:** Dashboard → Browse Jobs → back returns home; Edit Profile → Take a Photo / Gallery → save → quit app → photo still visible; dashboard header shows chat + calendar + bell icons with navigation
+
+**Next:** none requested
+
+**Blockers:** none
 
 ---
 

@@ -48,6 +48,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     final filter = ref.watch(jobFilterProvider);
     final bookmarkedIds = ref.watch(bookmarkedIdsProvider).value ?? {};
     final user = ref.watch(firebaseUserProvider).value;
+    final showBack = context.canPop();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -61,14 +62,32 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Browse Jobs',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                      if (showBack) ...[
+                        GestureDetector(
+                          onTap: () => context.pop(),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Icon(Icons.arrow_back_ios_new_rounded,
+                                size: 16, color: AppColors.textPrimary),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(
+                        child: Text(
+                          'Browse Jobs',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       if (filter.hasActiveFilters)
