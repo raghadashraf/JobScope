@@ -52,10 +52,14 @@ final sortedApplicantsProvider =
     }
 
     result.sort((a, b) {
-      if (a.matchScore == null && b.matchScore == null) return 0;
+      if (a.matchScore == null && b.matchScore == null) {
+        return b.appliedAt.compareTo(a.appliedAt);
+      }
       if (a.matchScore == null) return 1;
       if (b.matchScore == null) return -1;
-      return b.matchScore!.compareTo(a.matchScore!);
+      final byScore = b.matchScore!.compareTo(a.matchScore!);
+      if (byScore != 0) return byScore;
+      return b.appliedAt.compareTo(a.appliedAt);
     });
 
     return result;
@@ -140,8 +144,10 @@ final recruiterAnalyticsProvider = Provider<RecruiterAnalytics>((ref) {
   };
 
   final accepted = statusBreakdown['accepted']!;
+  final rejected = statusBreakdown['rejected']!;
+  final resolved = accepted + rejected;
   final acceptanceRate =
-      apps.isEmpty ? 0.0 : (accepted / apps.length) * 100;
+      resolved == 0 ? 0.0 : (accepted / resolved) * 100;
 
   final scored = apps.where((a) => a.matchScore != null).toList();
   final averageMatchScore = scored.isEmpty
@@ -153,6 +159,7 @@ final recruiterAnalyticsProvider = Provider<RecruiterAnalytics>((ref) {
   for (final job in jobs) {
     for (final skill in job.skills) {
       final key = skill.toLowerCase().trim();
+      if (key.isEmpty) continue;
       skillCount[key] = (skillCount[key] ?? 0) + 1;
     }
   }
@@ -199,4 +206,36 @@ final candidateProfileProvider =
       .get();
   if (!doc.exists) return null;
   return UserModel.fromMap(doc.data()!);
+});
+
+/// Top skills aggregated from applicant CVs (not job postings).
+final recruiterApplicantTopSkillsProvider =
+    FutureProvider<List<MapEntry<String, int>>>((ref) async {
+  final apps = ref.watch(recruiterAllApplicationsStreamProvider).value ?? [];
+  if (apps.isEmpty) return [];
+
+  final cvParser = ref.read(cvParserServiceProvider);
+  final skillCount = <String, int>{};
+  final seen = <String>{};
+
+  for (final app in apps) {
+    if (!app.isActive) continue;
+    final cacheKey = '${app.candidateId}:${app.cvId ?? ''}';
+    if (seen.contains(cacheKey)) continue;
+    seen.add(cacheKey);
+
+    try {
+      final cv = await cvParser.getCv(app.candidateId, cvId: app.cvId);
+      if (cv == null || cv.skills.isEmpty) continue;
+      for (final skill in cv.skills) {
+        final key = skill.toLowerCase().trim();
+        if (key.isEmpty) continue;
+        skillCount[key] = (skillCount[key] ?? 0) + 1;
+      }
+    } catch (_) {}
+  }
+
+  final sorted = skillCount.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  return sorted.take(5).toList();
 });

@@ -35,7 +35,7 @@ class ProfileScreen extends ConsumerWidget {
           final shortlistedCount = apps
               .where((a) => a.status == ApplicationStatus.shortlisted)
               .length;
-          final strength = cv?.profileStrength ?? 0;
+          final strength = cv?.effectiveProfileStrength ?? 0;
           final isCandidate = user.role == UserRole.candidate;
           final accent =
               isCandidate ? AppColors.primary : AppColors.secondary;

@@ -8,16 +8,15 @@ import '../../../core/utils/open_file_url.dart';
 import '../data/cv_providers.dart';
 import '../../../data/models/cv_model.dart';
 
-Future<void> _confirmDelete(
-    BuildContext context, WidgetRef ref, CvModel cv) async {
+Future<void> _confirmRemoveFile(BuildContext context, WidgetRef ref) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text('Delete CV?',
+      title: Text('Remove CV file?',
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
       content: Text(
-        'This will permanently remove your CV and all parsed data. You can upload a new one at any time.',
+        'This removes the attached PDF/DOCX only. Your skills, experience, and education stay on your profile.',
         style: GoogleFonts.inter(fontSize: 14, height: 1.5),
       ),
       actions: [
@@ -35,14 +34,25 @@ Future<void> _confirmDelete(
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             elevation: 0,
           ),
-          child: Text('Delete', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          child: Text('Remove file',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
         ),
       ],
     ),
   );
   if (confirmed == true) {
-    ref.read(cvUploadProvider.notifier).deleteCv(cvId: cv.id);
+    ref.read(cvUploadProvider.notifier).removeAttachedFile();
   }
+}
+
+bool _isEmptyProfile(CvModel? cv) {
+  if (cv == null) return true;
+  return !cv.hasFile &&
+      cv.skills.isEmpty &&
+      cv.workExperience.isEmpty &&
+      cv.education.isEmpty &&
+      cv.experienceLevel == null &&
+      cv.educationLevel == null;
 }
 
 class CvScreen extends ConsumerWidget {
@@ -50,7 +60,7 @@ class CvScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cvsAsync = ref.watch(userCvsStreamProvider);
+    final profileAsync = ref.watch(cvStreamProvider);
     final uploadState = ref.watch(cvUploadProvider);
     final isBusy = uploadState.status != CvUploadStatus.idle &&
         uploadState.status != CvUploadStatus.error &&
@@ -59,7 +69,7 @@ class CvScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('My CVs',
+        title: Text('My Profile',
             style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w700, fontSize: 20)),
         backgroundColor: AppColors.background,
@@ -108,6 +118,16 @@ class CvScreen extends ConsumerWidget {
                   child: OutlinedButton.icon(
                     onPressed: isBusy
                         ? null
+                        : () => context.push(AppRoutes.editCvProfile),
+                    icon: const Icon(Icons.edit_note_rounded, size: 18),
+                    label: const Text('Edit profile'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isBusy
+                        ? null
                         : () => ref
                             .read(cvUploadProvider.notifier)
                             .pickAndUploadBasic(),
@@ -115,7 +135,11 @@ class CvScreen extends ConsumerWidget {
                     label: const Text('Upload CV'),
                   ),
                 ),
-                const SizedBox(width: 10),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: isBusy
@@ -135,28 +159,34 @@ class CvScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 20),
-            cvsAsync.when(
-              data: (cvs) {
-                if (cvs.isEmpty) {
+            profileAsync.when(
+              data: (profile) {
+                if (_isEmptyProfile(profile)) {
                   return _EmptyState(
                     onUpload: () => ref
                         .read(cvUploadProvider.notifier)
                         .pickAndUploadBasic(),
+                    onManual: () => context.push(AppRoutes.editCvProfile),
                     isLoading: isBusy,
                   );
                 }
                 return Column(
-                  children: cvs.asMap().entries.map((entry) {
-                    final cv = entry.value;
-                    final isLatest = entry.key == 0;
-                    return _CvListCard(
-                      cv: cv,
-                      isLatest: isLatest,
-                      onView: () => openFileUrl(cv.fileUrl),
-                      onDelete: () => _confirmDelete(context, ref, cv),
+                  children: [
+                    if (profile!.skills.isEmpty && profile.hasFile)
+                      _IncompleteParseBanner(
+                        onEdit: () => context.push(AppRoutes.editCvProfile),
+                      ),
+                    _CvContent(
+                      cv: profile,
+                      onReplace: () => ref
+                          .read(cvUploadProvider.notifier)
+                          .pickAndUploadBasic(),
+                      onRemoveFile: profile.hasFile
+                          ? () => _confirmRemoveFile(context, ref)
+                          : null,
                       isLoading: isBusy,
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 );
               },
               loading: () => const Center(
@@ -174,120 +204,16 @@ class CvScreen extends ConsumerWidget {
   }
 }
 
-class _CvListCard extends StatelessWidget {
-  final CvModel cv;
-  final bool isLatest;
-  final VoidCallback onView;
-  final VoidCallback onDelete;
-  final bool isLoading;
-
-  const _CvListCard({
-    required this.cv,
-    required this.isLatest,
-    required this.onView,
-    required this.onDelete,
-    required this.isLoading,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isLatest
-              ? AppColors.primary.withValues(alpha: 0.35)
-              : AppColors.border,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      cv.fileName.isNotEmpty
-                          ? cv.fileName
-                          : 'AI-built CV',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      'Uploaded ${_formatDate(cv.uploadedAt)}${isLatest ? ' · Latest' : ''}',
-                      style: GoogleFonts.inter(
-                          fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              if (!isLoading)
-                IconButton(
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline_rounded,
-                      color: AppColors.error, size: 20),
-                ),
-            ],
-          ),
-          if (cv.skills.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: cv.skills
-                  .take(5)
-                  .map((s) => Chip(
-                        label: Text(s, style: const TextStyle(fontSize: 11)),
-                        visualDensity: VisualDensity.compact,
-                      ))
-                  .toList(),
-            ),
-          ],
-          const SizedBox(height: 12),
-          if (cv.hasFile)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: onView,
-                icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                label: const Text('View PDF'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            )
-          else
-            Text(
-              'AI-generated profile (no file). Skills used for matching.',
-              style: GoogleFonts.inter(
-                  fontSize: 12, color: AppColors.textTertiary),
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime d) => '${d.day}/${d.month}/${d.year}';
-}
-
-// ── Empty state: no CV yet ────────────────────────────────────────────────────
+// ── Empty state: no profile yet ─────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final VoidCallback onUpload;
+  final VoidCallback onManual;
   final bool isLoading;
-  const _EmptyState({required this.onUpload, required this.isLoading});
+  const _EmptyState({
+    required this.onUpload,
+    required this.onManual,
+    required this.isLoading,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -302,11 +228,11 @@ class _EmptyState extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.06),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.description_outlined,
+            child: const Icon(Icons.person_outline_rounded,
                 size: 60, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
-          Text('No CV uploaded yet',
+          Text('No profile yet',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -316,7 +242,7 @@ class _EmptyState extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
-              'Upload your CV to let AI parse your skills, experience and education automatically.',
+              'Build one profile with skills and experience. You can upload a CV file anytime — it adds to the same profile.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                   fontSize: 14, color: AppColors.textSecondary, height: 1.5),
@@ -324,6 +250,12 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           _UploadButton(onTap: onUpload, isLoading: isLoading),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onManual,
+            icon: const Icon(Icons.edit_note_rounded, size: 18),
+            label: const Text('Create profile manually'),
+          ),
           const SizedBox(height: 12),
           Text('Supports PDF and DOCX',
               style: GoogleFonts.inter(
@@ -334,17 +266,54 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
+class _IncompleteParseBanner extends StatelessWidget {
+  final VoidCallback onEdit;
+
+  const _IncompleteParseBanner({required this.onEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: AppColors.warning, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'No skills on your profile yet. Add them so job matching works.',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.textPrimary,
+                height: 1.35,
+              ),
+            ),
+          ),
+          TextButton(onPressed: onEdit, child: const Text('Fix')),
+        ],
+      ),
+    );
+  }
+}
+
 // ── CV content: shows parsed data ────────────────────────────────────────────
 class _CvContent extends StatelessWidget {
   final CvModel cv;
   final VoidCallback onReplace;
-  final VoidCallback onDelete;
+  final VoidCallback? onRemoveFile;
   final bool isLoading;
 
   const _CvContent({
     required this.cv,
     required this.onReplace,
-    required this.onDelete,
+    required this.onRemoveFile,
     required this.isLoading,
   });
 
@@ -353,75 +322,105 @@ class _CvContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Profile strength card
-        _ProfileStrengthCard(strength: cv.profileStrength),
+        _ProfileStrengthCard(strength: cv.effectiveProfileStrength),
         const SizedBox(height: 20),
-
-        // File info
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.description_rounded,
-                    color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
+        if (cv.hasFile)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(cv.fileName,
-                        style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    Text(
-                        'Uploaded ${_formatDate(cv.uploadedAt)}',
-                        style: GoogleFonts.inter(
-                            fontSize: 12, color: AppColors.textTertiary)),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.description_rounded,
+                          color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(cv.fileName,
+                              style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis),
+                          Text(
+                              'Uploaded ${_formatDate(cv.uploadedAt)}',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: AppColors.textTertiary)),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              if (!isLoading) ...[
-                _UploadButton(
-                    onTap: onReplace,
-                    isLoading: false,
-                    isCompact: true,
-                    label: 'Replace'),
-                const SizedBox(width: 6),
-                IconButton(
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline_rounded,
-                      color: AppColors.error, size: 20),
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.error.withValues(alpha: 0.08),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.all(8),
+                if (!isLoading) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      TextButton(
+                        onPressed: () => openFileUrl(cv.fileUrl),
+                        child: const Text('View'),
+                      ),
+                      _UploadButton(
+                          onTap: onReplace,
+                          isLoading: false,
+                          isCompact: true,
+                          label: 'Replace'),
+                      if (onRemoveFile != null)
+                        IconButton(
+                          onPressed: onRemoveFile,
+                          icon: const Icon(Icons.delete_outline_rounded,
+                              color: AppColors.error, size: 20),
+                          tooltip: 'Remove file',
+                        ),
+                    ],
                   ),
-                  tooltip: 'Delete CV',
-                ),
-              ] else
-                const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
-            ],
+                ] else
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+              ],
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Text(
+              'No CV file attached. Upload one above or keep a manual profile only.',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
           ),
-        ),
         const SizedBox(height: 20),
 
         // Skills section
@@ -768,7 +767,7 @@ class _UploadProgressCard extends StatelessWidget {
     } else if (status == CvUploadStatus.parsing) {
       msg = 'AI is parsing your CV...';
     } else {
-      msg = 'Deleting your CV...';
+      msg = 'Removing attached file...';
     }
 
     return Container(

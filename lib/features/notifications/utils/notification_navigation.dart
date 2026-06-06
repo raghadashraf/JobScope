@@ -100,11 +100,11 @@ Future<bool> _openApplication(
 
   final app =
       await ref.read(applicationRepositoryProvider).fetchApplication(appId);
+  if (!context.mounted) return false;
   if (app == null) {
     _showNavError(context, 'Application not found. It may have been removed.');
     return false;
   }
-  if (!context.mounted) return false;
 
   final role = ref.read(currentUserProvider).value?.role;
   final openRecruiter =

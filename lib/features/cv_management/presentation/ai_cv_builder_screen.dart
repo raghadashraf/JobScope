@@ -7,6 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/secrets.dart';
+import '../../../core/constants/profile_levels.dart';
+import '../../../core/utils/cv_profile_strength.dart';
+import '../../../core/widgets/profile_level_fields.dart';
 import '../../../data/models/cv_model.dart';
 import '../../auth/data/auth_providers.dart';
 import '../data/cv_providers.dart';
@@ -53,6 +56,8 @@ class _AiCvBuilderScreenState extends ConsumerState<AiCvBuilderScreen> {
   // Skills
   final _skillCtrl = TextEditingController();
   final List<String> _skills = [];
+  String? _experienceLevel;
+  String? _educationLevel;
 
   @override
   void initState() {
@@ -154,7 +159,18 @@ class _AiCvBuilderScreenState extends ConsumerState<AiCvBuilderScreen> {
   ];
 
   Widget _stepBody() => switch (_step) {
-    0 => _PersonalStep(name: _name, title: _title, email: _email, phone: _phone, location: _location, summary: _summary),
+    0 => _PersonalStep(
+        name: _name,
+        title: _title,
+        email: _email,
+        phone: _phone,
+        location: _location,
+        summary: _summary,
+        experienceLevel: _experienceLevel,
+        educationLevel: _educationLevel,
+        onExperienceChanged: (v) => setState(() => _experienceLevel = v),
+        onEducationChanged: (v) => setState(() => _educationLevel = v),
+      ),
     1 => _ListStep<_Exp>(
         icon: Icons.work_rounded,
         heading: 'Work Experience',
@@ -235,27 +251,49 @@ class _AiCvBuilderScreenState extends ConsumerState<AiCvBuilderScreen> {
         jsonDecode(res.body)['candidates'][0]['content']['parts'][0]['text'] as String,
       ) as Map<String, dynamic>;
 
-      final aiSkills = (data['skills'] as List<dynamic>?)?.map((s) => s.toString()).toList() ?? _skills;
-      final aiSummary = data['summary'] as String? ?? _summary.text;
+      final aiSkills = (data['skills'] as List<dynamic>?)
+              ?.map((s) => s.toString())
+              .toList() ??
+          _skills;
 
-      int score = 30;
-      if (_exps.isNotEmpty) score += 25;
-      if (_edus.isNotEmpty) score += 20;
-      if (aiSkills.length >= 5) score += 15;
-      if (aiSummary.isNotEmpty) score += 10;
-
-      final cv = CvModel(
-        uid: uid, fileUrl: '', fileName: 'AI-Generated CV',
-        uploadedAt: DateTime.now(), skills: aiSkills,
-        workExperience: _exps.map((e) => WorkExperience(
-          company: e.company, title: e.role,
-          duration: '${e.startYear}–${e.endYear.isEmpty ? "Present" : e.endYear}',
-          description: e.description,
-        )).toList(),
-        education: _edus.map((e) => Education(
-          institution: e.institution, degree: e.degree, field: e.field, year: e.year,
-        )).toList(),
-        profileStrength: score.clamp(0, 100),
+      final cvDraft = CvModel(
+        uid: uid,
+        fileUrl: '',
+        fileName: 'AI-Generated CV',
+        uploadedAt: DateTime.now(),
+        skills: aiSkills,
+        workExperience: _exps
+            .map((e) => WorkExperience(
+                  company: e.company,
+                  title: e.role,
+                  duration:
+                      '${e.startYear}–${e.endYear.isEmpty ? "Present" : e.endYear}',
+                  description: e.description,
+                ))
+            .toList(),
+        education: _edus
+            .map((e) => Education(
+                  institution: e.institution,
+                  degree: e.degree,
+                  field: e.field,
+                  year: e.year,
+                ))
+            .toList(),
+        experienceLevel: _experienceLevel ??
+            ProfileLevels.inferExperienceLevel(_exps.length),
+        educationLevel: _educationLevel ??
+            ProfileLevels.inferEducationLevel(_edus
+                .map((e) => Education(
+                      institution: e.institution,
+                      degree: e.degree,
+                      field: e.field,
+                      year: e.year,
+                    ))
+                .toList()),
+        profileStrength: 0,
+      );
+      final cv = cvDraft.copyWith(
+        profileStrength: CvProfileStrength.fromCv(cvDraft),
       );
 
       await ref.read(cvParserServiceProvider).insertCv(cv);
@@ -299,7 +337,23 @@ class _AiCvBuilderScreenState extends ConsumerState<AiCvBuilderScreen> {
 // ── Step 0 ────────────────────────────────────────────────────────────────────
 class _PersonalStep extends StatelessWidget {
   final TextEditingController name, title, email, phone, location, summary;
-  const _PersonalStep({required this.name, required this.title, required this.email, required this.phone, required this.location, required this.summary});
+  final String? experienceLevel;
+  final String? educationLevel;
+  final ValueChanged<String?> onExperienceChanged;
+  final ValueChanged<String?> onEducationChanged;
+
+  const _PersonalStep({
+    required this.name,
+    required this.title,
+    required this.email,
+    required this.phone,
+    required this.location,
+    required this.summary,
+    required this.experienceLevel,
+    required this.educationLevel,
+    required this.onExperienceChanged,
+    required this.onEducationChanged,
+  });
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
@@ -315,6 +369,16 @@ class _PersonalStep extends StatelessWidget {
         _Field(ctrl: location, label: 'Location', hint: 'Cairo, Egypt', icon: Icons.location_on_outlined),
         _Field(ctrl: summary, label: 'Brief Summary (optional)', hint: 'A short intro…', icon: Icons.notes_rounded, maxLines: 3),
       ]),
+      const SizedBox(height: 16),
+      ExperienceLevelDropdown(
+        value: experienceLevel,
+        onChanged: onExperienceChanged,
+      ),
+      const SizedBox(height: 12),
+      CandidateEducationLevelDropdown(
+        value: educationLevel,
+        onChanged: onEducationChanged,
+      ),
     ]),
   );
 }
@@ -406,26 +470,38 @@ class _EduForm extends StatefulWidget {
   State<_EduForm> createState() => _EduFormState();
 }
 class _EduFormState extends State<_EduForm> {
-  final _i = TextEditingController(), _d = TextEditingController(),
-      _f = TextEditingController(), _y = TextEditingController();
+  final _i = TextEditingController(), _f = TextEditingController(),
+      _y = TextEditingController();
+  String? _degreeLevel;
   @override
   void dispose() {
-    for (final x in [_i, _d, _f, _y]) { x.dispose(); }
+    for (final x in [_i, _f, _y]) { x.dispose(); }
     super.dispose();
   }
   @override
   Widget build(BuildContext context) => Column(children: [
     _Card(children: [
       _Field(ctrl: _i, label: 'Institution', hint: 'Cairo University', icon: Icons.business_rounded),
-      _Field(ctrl: _d, label: 'Degree', hint: "Bachelor's", icon: Icons.school_outlined),
+      const SizedBox(height: 4),
+      CandidateEducationLevelDropdown(
+        value: _degreeLevel,
+        label: 'Degree type',
+        onChanged: (v) => setState(() => _degreeLevel = v),
+      ),
       _Field(ctrl: _f, label: 'Field of Study', hint: 'Computer Science', icon: Icons.subject_rounded),
       _Field(ctrl: _y, label: 'Graduation Year', hint: '2024', icon: Icons.calendar_today_outlined, keyboard: TextInputType.number),
     ]),
     const SizedBox(height: 12),
     _FormButtons(
       onCancel: widget.onCancel,
-      onSave: () { if (_i.text.isEmpty || _d.text.isEmpty) return;
-        widget.onSave(_Edu(institution: _i.text.trim(), degree: _d.text.trim(), field: _f.text.trim(), year: _y.text.trim()));
+      onSave: () {
+        if (_i.text.isEmpty || _degreeLevel == null) return;
+        widget.onSave(_Edu(
+          institution: _i.text.trim(),
+          degree: _degreeLevel!,
+          field: _f.text.trim(),
+          year: _y.text.trim(),
+        ));
       },
     ),
   ]);

@@ -210,7 +210,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         data: (cv) => _cvCard(
                           context: context,
                           ref: ref,
-                          strength: cv?.profileStrength ?? 0,
+                          strength: cv?.effectiveProfileStrength ?? 0,
                           hasCv: cv != null,
                           isUploading:
                               uploadState.status != CvUploadStatus.idle &&

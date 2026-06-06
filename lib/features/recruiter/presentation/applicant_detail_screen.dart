@@ -11,6 +11,7 @@ import '../../applications/data/application_providers.dart';
 import '../../applications/presentation/widgets/application_status_badge.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../job_listing/presentation/widgets/match_badge_widget.dart';
+import '../../job_listing/presentation/widgets/match_reasons_sheet.dart';
 import '../../../core/utils/open_file_url.dart';
 import '../../messaging/data/messaging_providers.dart';
 import '../data/recruiter_providers.dart';
@@ -299,6 +300,63 @@ class _ApplicantDetailScreenState extends ConsumerState<ApplicantDetailScreen> {
                         result: MatchResult(
                           score: app.matchScore!,
                           category: _categorise(app.matchScore!),
+                        ),
+                      ),
+                      ...cvAsync.maybeWhen(
+                        data: (cv) {
+                          if (cv == null || cv.skills.isEmpty) {
+                            return const <Widget>[];
+                          }
+                          return [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: TextButton.icon(
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (_) => MatchReasonsSheet(
+                                      jobId: app.jobId,
+                                      cvSkills: cv.skills,
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.insights_rounded,
+                                    size: 18),
+                                label: const Text('Why this match?'),
+                              ),
+                            ),
+                          ];
+                        },
+                        orElse: () => const <Widget>[],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: _cardDecoration(),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline_rounded,
+                          size: 18, color: AppColors.textTertiary),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Match score unavailable — candidate applied without a parsed CV or before scoring was enabled.',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     ],

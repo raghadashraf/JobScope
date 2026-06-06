@@ -12,9 +12,11 @@ class JobModel {
   final String location;
   final String jobType; // full-time, part-time, remote, contract
   final String? experienceLevel; // junior, mid, senior, lead
+  final String? educationLevel; // e.g. Bachelor's, Master's
   final String description;
   final List<String> requirements;
   final List<String> skills;
+  final List<String> benefits;
   final double? salaryMin;
   final double? salaryMax;
   final String? salaryCurrency;
@@ -33,9 +35,11 @@ class JobModel {
     required this.location,
     required this.jobType,
     this.experienceLevel,
+    this.educationLevel,
     required this.description,
     required this.requirements,
     required this.skills,
+    this.benefits = const [],
     this.salaryMin,
     this.salaryMax,
     this.salaryCurrency = 'USD',
@@ -54,9 +58,11 @@ class JobModel {
         'location': location,
         'jobType': jobType,
         'experienceLevel': experienceLevel,
+        'educationLevel': educationLevel,
         'description': description,
         'requirements': requirements,
         'skills': skills,
+        'benefits': benefits,
         'salaryMin': salaryMin,
         'salaryMax': salaryMax,
         'salaryCurrency': salaryCurrency,
@@ -76,9 +82,11 @@ class JobModel {
         location: map['location'] ?? '',
         jobType: map['jobType'] ?? 'full-time',
         experienceLevel: map['experienceLevel'],
+        educationLevel: map['educationLevel'],
         description: map['description'] ?? '',
         requirements: List<String>.from(map['requirements'] ?? []),
         skills: List<String>.from(map['skills'] ?? []),
+        benefits: List<String>.from(map['benefits'] ?? []),
         salaryMin: (map['salaryMin'] as num?)?.toDouble(),
         salaryMax: (map['salaryMax'] as num?)?.toDouble(),
         salaryCurrency: map['salaryCurrency'] ?? 'USD',
@@ -101,9 +109,11 @@ class JobModel {
     String? location,
     String? jobType,
     Object? experienceLevel = _sentinel,
+    Object? educationLevel = _sentinel,
     String? description,
     List<String>? requirements,
     List<String>? skills,
+    List<String>? benefits,
     Object? salaryMin = _sentinel,
     Object? salaryMax = _sentinel,
     Object? salaryCurrency = _sentinel,
@@ -123,9 +133,13 @@ class JobModel {
         experienceLevel: experienceLevel == _sentinel
             ? this.experienceLevel
             : experienceLevel as String?,
+        educationLevel: educationLevel == _sentinel
+            ? this.educationLevel
+            : educationLevel as String?,
         description: description ?? this.description,
         requirements: requirements ?? this.requirements,
         skills: skills ?? this.skills,
+        benefits: benefits ?? this.benefits,
         salaryMin:
             salaryMin == _sentinel ? this.salaryMin : salaryMin as double?,
         salaryMax:

@@ -115,6 +115,86 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
     return '${(diff.inDays / 30).floor()}mo ago';
   }
 
+  Widget _skillsBarChart(List<MapEntry<String, int>> skills) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: SizedBox(
+        height: skills.length * 52.0,
+        child: BarChart(
+          BarChartData(
+            alignment: BarChartAlignment.spaceAround,
+            maxY: skills.first.value.toDouble() + 1,
+            barGroups: skills.asMap().entries.map((entry) {
+              return BarChartGroupData(
+                x: entry.key,
+                barRods: [
+                  BarChartRodData(
+                    toY: entry.value.value.toDouble(),
+                    color: AppColors.primary,
+                    width: 20,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ],
+              );
+            }).toList(),
+            titlesData: FlTitlesData(
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 100,
+                  getTitlesWidget: (value, meta) {
+                    final index = value.toInt();
+                    if (index < 0 || index >= skills.length) {
+                      return const SizedBox.shrink();
+                    }
+                    final skill = skills[index].key;
+                    final label = skill.isEmpty
+                        ? ''
+                        : '${skill[0].toUpperCase()}${skill.substring(1)}';
+                    return Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  },
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  getTitlesWidget: (value, meta) => Text(
+                    value.toInt().toString(),
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            gridData: const FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _recentActivityTile(ApplicationModel app) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -189,6 +269,8 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appsAsync = ref.watch(recruiterAllApplicationsStreamProvider);
     final analytics = ref.watch(recruiterAnalyticsProvider);
+    final applicantSkillsAsync =
+        ref.watch(recruiterApplicantTopSkillsProvider);
     final isLoading = appsAsync.isLoading;
 
     return Scaffold(
@@ -260,9 +342,10 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     _statCard(
                       icon: Icons.check_circle_rounded,
-                      label: 'Accepted',
-                      value:
-                          '${analytics.statusBreakdown['accepted'] ?? 0}',
+                      label: 'Acceptance Rate',
+                      value: analytics.totalApplicants == 0
+                          ? 'N/A'
+                          : '${analytics.acceptanceRate.toStringAsFixed(0)}%',
                       color: AppColors.success,
                     ),
                   ],
@@ -397,16 +480,33 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Top Skills Demand',
+                  'Top Applicant Skills',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  'Most common skills across applicant CVs',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 12),
-                if (analytics.topSkills.isEmpty)
-                  Container(
+                applicantSkillsAsync.when(
+                  loading: () => Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (_, _) => Container(
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
@@ -415,101 +515,38 @@ class RecruiterAnalyticsScreen extends ConsumerWidget {
                     ),
                     child: Center(
                       child: Text(
-                        'Post jobs with skills to see demand',
+                        'Could not load applicant skills',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: AppColors.textSecondary,
                         ),
                       ),
                     ),
-                  )
-                else
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: SizedBox(
-                      height: analytics.topSkills.length * 52.0,
-                      child: BarChart(
-                        BarChartData(
-                          alignment: BarChartAlignment.spaceAround,
-                          maxY: analytics.topSkills.first.value
-                                  .toDouble() +
-                              1,
-                          barGroups: analytics.topSkills
-                              .asMap()
-                              .entries
-                              .map((entry) {
-                            return BarChartGroupData(
-                              x: entry.key,
-                              barRods: [
-                                BarChartRodData(
-                                  toY: entry.value.value.toDouble(),
-                                  color: AppColors.primary,
-                                  width: 20,
-                                  borderRadius:
-                                      BorderRadius.circular(6),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                          titlesData: FlTitlesData(
-                            rightTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            topTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 100,
-                                getTitlesWidget: (value, meta) {
-                                  final index = value.toInt();
-                                  if (index < 0 ||
-                                      index >=
-                                          analytics.topSkills.length) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  final skill =
-                                      analytics.topSkills[index].key;
-                                  final label = skill.isEmpty
-                                      ? ''
-                                      : '${skill[0].toUpperCase()}${skill.substring(1)}';
-                                  return Text(
-                                    label,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  );
-                                },
-                              ),
-                            ),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (value, meta) => Text(
-                                  value.toInt().toString(),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    color: AppColors.textTertiary,
-                                  ),
-                                ),
-                              ),
+                  ),
+                  data: (applicantSkills) {
+                    if (applicantSkills.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Applicant CV skills will appear here once candidates apply',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                          gridData: const FlGridData(show: false),
-                          borderData: FlBorderData(show: false),
                         ),
-                      ),
-                    ),
-                  ),
+                      );
+                    }
+                    return _skillsBarChart(applicantSkills);
+                  },
+                ),
                 const SizedBox(height: 24),
                 Text(
                   'Recent Activity',

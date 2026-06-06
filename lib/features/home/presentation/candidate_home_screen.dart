@@ -83,6 +83,7 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
   @override
   Widget build(BuildContext context) {
     ref.watch(fcmBootstrapProvider);
+    ref.watch(jobMatchNotificationBootstrapProvider);
 
     ref.listen(candidateTabProvider, (_, next) {
       if (next != _currentIndex) _onTap(next);

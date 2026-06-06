@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +10,9 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/open_file_url.dart';
+import '../../../core/services/job_matching_service.dart';
+import '../../job_listing/presentation/widgets/match_badge_widget.dart';
 import '../../../core/utils/app_router.dart';
 import '../../../data/models/application_model.dart';
 import '../../../data/models/job_model.dart';
@@ -183,7 +185,6 @@ class _JobApplicantsScreenState extends ConsumerState<JobApplicantsScreen> {
                     loading: () => const SizedBox.shrink(),
                     error: (_, _) => const SizedBox.shrink(),
                   ),
-                  const SizedBox(height: 12),
                   Row(
                     children: [
                       _filterTab(
@@ -195,6 +196,14 @@ class _JobApplicantsScreenState extends ConsumerState<JobApplicantsScreen> {
                       _filterTab('Shortlisted',
                           ApplicantFilterStatus.shortlisted, filter, ref),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sorted by AI match score (highest first)',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textTertiary,
+                    ),
                   ),
                 ],
               ),
@@ -315,6 +324,13 @@ class _ApplicantCard extends ConsumerStatefulWidget {
 class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
   bool _isUpdating = false;
 
+  MatchCategory _categorise(int score) {
+    if (score >= 80) return MatchCategory.excellent;
+    if (score >= 60) return MatchCategory.good;
+    if (score >= 40) return MatchCategory.fair;
+    return MatchCategory.low;
+  }
+
   Future<void> _updateStatus(ApplicationStatus newStatus) async {
     setState(() => _isUpdating = true);
     try {
@@ -411,6 +427,16 @@ class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
             ],
           ),
 
+          if (app.matchScore != null) ...[
+            const SizedBox(height: 10),
+            MatchBadgeWidget(
+              result: MatchResult(
+                score: app.matchScore!,
+                category: _categorise(app.matchScore!),
+              ),
+            ),
+          ],
+
           const SizedBox(height: 12),
 
           // ── Applied date + CV ─────────────────────────────────────
@@ -427,18 +453,7 @@ class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
               const Spacer(),
               if (hasCV)
                 GestureDetector(
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: app.cvUrl!));
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('CV link copied',
-                          style: GoogleFonts.inter(color: Colors.white)),
-                      backgroundColor: AppColors.secondary,
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 2),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ));
-                  },
+                  onTap: () => openFileUrl(app.cvUrl!),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 5),
@@ -455,7 +470,7 @@ class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
                             size: 12, color: AppColors.secondary),
                         const SizedBox(width: 4),
                         Text(
-                          'Copy CV',
+                          'View CV',
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -464,6 +479,14 @@ class _ApplicantCardState extends ConsumerState<_ApplicantCard> {
                         ),
                       ],
                     ),
+                  ),
+                )
+              else if (app.matchScore == null)
+                Text(
+                  'No match score',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.textTertiary,
                   ),
                 ),
             ],

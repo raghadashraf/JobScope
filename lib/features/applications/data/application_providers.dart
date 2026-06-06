@@ -95,21 +95,17 @@ class ApplyNotifier extends Notifier<ApplyState> {
 
     try {
       int? matchScore;
-      JobModel? job;
-      if (cv != null && cv.skills.isNotEmpty) {
-        job = await ref.read(jobRepositoryProvider).fetchJob(jobId);
-        if (job != null) {
-          try {
-            final result = await ref
-                .read(jobMatchingServiceProvider)
-                .calculateMatch(cv, job);
-            matchScore = result.score;
-          } catch (_) {
-            // Apply proceeds without matchScore if embedding/API fails.
-          }
+      JobModel? job = await ref.read(jobRepositoryProvider).fetchJob(jobId);
+      if (cv != null && job != null) {
+        final matching = ref.read(jobMatchingServiceProvider);
+        try {
+          final result = await matching.calculateMatch(cv, job);
+          matchScore = result.score;
+        } catch (_) {
+          final fallback = matching.structuredMatchScore(cv, job);
+          if (fallback > 0) matchScore = fallback;
         }
       }
-      job ??= await ref.read(jobRepositoryProvider).fetchJob(jobId);
 
       final application = await ref
           .read(applicationRepositoryProvider)

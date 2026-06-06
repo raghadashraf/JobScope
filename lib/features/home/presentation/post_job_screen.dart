@@ -3,10 +3,34 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/profile_level_fields.dart';
 import '../../../core/utils/firestore_helpers.dart';
 import '../../../data/models/job_model.dart';
 import '../../auth/data/auth_providers.dart';
 import '../../job_listing/data/job_providers.dart';
+
+const _skillSuggestions = [
+  'Flutter',
+  'Dart',
+  'Firebase',
+  'Riverpod',
+  'React',
+  'Node.js',
+  'Python',
+  'Java',
+  'Kotlin',
+  'Swift',
+  'SQL',
+  'AWS',
+  'Docker',
+  'Git',
+  'UI/UX',
+  'Agile',
+  'REST APIs',
+  'GraphQL',
+  'TypeScript',
+  'JavaScript',
+];
 
 class PostJobScreen extends ConsumerStatefulWidget {
   final JobModel? jobToEdit;
@@ -25,12 +49,16 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
   final _descriptionCtrl = TextEditingController();
   final _reqCtrl = TextEditingController();
   final _skillCtrl = TextEditingController();
+  final _benefitCtrl = TextEditingController();
   final _salaryMinCtrl = TextEditingController();
   final _salaryMaxCtrl = TextEditingController();
 
   String _jobType = 'full-time';
+  String? _experienceLevel;
+  String? _educationLevel;
   final List<String> _requirements = [];
   final List<String> _skills = [];
+  final List<String> _benefits = [];
   bool _hasSalary = false;
   bool _isLoading = false;
   bool _companyPrefilled = false;
@@ -47,8 +75,11 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
       _locationCtrl.text = job.location;
       _descriptionCtrl.text = job.description;
       _jobType = job.jobType;
+      _experienceLevel = job.experienceLevel;
+      _educationLevel = job.educationLevel;
       _requirements.addAll(job.requirements);
       _skills.addAll(job.skills);
+      _benefits.addAll(job.benefits);
       _hasSalary = job.salaryMin != null || job.salaryMax != null;
       if (_hasSalary) {
         _salaryMinCtrl.text = job.salaryMin?.toStringAsFixed(0) ?? '';
@@ -65,6 +96,7 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     _descriptionCtrl.dispose();
     _reqCtrl.dispose();
     _skillCtrl.dispose();
+    _benefitCtrl.dispose();
     _salaryMinCtrl.dispose();
     _salaryMaxCtrl.dispose();
     super.dispose();
@@ -144,6 +176,17 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     });
   }
 
+  void _addBenefit() {
+    final text = _benefitCtrl.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      if (!_benefits.any((b) => b.toLowerCase() == text.toLowerCase())) {
+        _benefits.add(text);
+      }
+      _benefitCtrl.clear();
+    });
+  }
+
   void _clearForm() {
     _formKey.currentState?.reset();
     _titleCtrl.clear();
@@ -154,8 +197,11 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
     _salaryMaxCtrl.clear();
     setState(() {
       _jobType = 'full-time';
+      _experienceLevel = null;
+      _educationLevel = null;
       _requirements.clear();
       _skills.clear();
+      _benefits.clear();
       _hasSalary = false;
     });
   }
@@ -185,9 +231,12 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
         company: _companyCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
         jobType: _jobType,
+        experienceLevel: _experienceLevel,
+        educationLevel: _educationLevel,
         description: _descriptionCtrl.text.trim(),
         requirements: List<String>.from(_requirements),
         skills: List<String>.from(_skills),
+        benefits: List<String>.from(_benefits),
         salaryMin: _hasSalary ? double.tryParse(_salaryMinCtrl.text) : null,
         salaryMax: _hasSalary ? double.tryParse(_salaryMaxCtrl.text) : null,
         postedAt: widget.jobToEdit?.postedAt ?? DateTime.now(),
@@ -351,6 +400,17 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                   },
                 ),
               ),
+              const SizedBox(height: 12),
+              ExperienceLevelDropdown(
+                value: _experienceLevel,
+                label: 'Experience Level',
+                onChanged: (v) => setState(() => _experienceLevel = v),
+              ),
+              const SizedBox(height: 12),
+              JobEducationLevelDropdown(
+                value: _educationLevel,
+                onChanged: (v) => setState(() => _educationLevel = v),
+              ),
               const SizedBox(height: 28),
 
               // ── Description ───────────────────────────────────────────
@@ -399,21 +459,65 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
 
               // ── Skills ────────────────────────────────────────────────
               _sectionLabel('Required Skills'),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _skillCtrl,
-                      style: GoogleFonts.inter(fontSize: 14),
-                      decoration: _inputDecoration(
-                          'e.g. Flutter, Firebase, Dart (comma-separated)'),
-                      onFieldSubmitted: (_) => _addSkill(),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _addButton(_addSkill, accent),
-                ],
+              Autocomplete<String>(
+                optionsBuilder: (value) {
+                  final query = value.text.trim().toLowerCase();
+                  if (query.isEmpty) return const Iterable<String>.empty();
+                  return _skillSuggestions.where((skill) {
+                    final lower = skill.toLowerCase();
+                    return lower.contains(query) &&
+                        !_skills.any((s) => s.toLowerCase() == lower);
+                  });
+                },
+                onSelected: (selection) {
+                  setState(() {
+                    if (!_skills
+                        .any((s) => s.toLowerCase() == selection.toLowerCase())) {
+                      _skills.add(selection);
+                    }
+                    _skillCtrl.clear();
+                  });
+                },
+                fieldViewBuilder: (context, _, focusNode, onSubmitted) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _skillCtrl,
+                          focusNode: focusNode,
+                          style: GoogleFonts.inter(fontSize: 14),
+                          decoration: _inputDecoration(
+                            'Start typing e.g. Flutter, Firebase…',
+                          ),
+                          onFieldSubmitted: (_) => _addSkill(),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _addButton(_addSkill, accent),
+                    ],
+                  );
+                },
               ),
+              if (_skills.length < 3) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _skillSuggestions
+                      .where((s) =>
+                          !_skills.any((x) => x.toLowerCase() == s.toLowerCase()))
+                      .take(6)
+                      .map(
+                        (skill) => ActionChip(
+                          label: Text(skill),
+                          onPressed: () => setState(() => _skills.add(skill)),
+                          backgroundColor: AppColors.surfaceVariant,
+                          side: BorderSide(color: AppColors.border),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
               if (_skills.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Wrap(
@@ -446,6 +550,64 @@ class _PostJobScreenState extends ConsumerState<PostJobScreen> {
                                 setState(() => _skills.removeAt(e.key)),
                             child: Icon(Icons.close_rounded,
                                 size: 14, color: accent),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+              const SizedBox(height: 28),
+
+              // ── Benefits ────────────────────────────────────────────
+              _sectionLabel('Benefits (optional)'),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _benefitCtrl,
+                      style: GoogleFonts.inter(fontSize: 14),
+                      decoration: _inputDecoration(
+                          'e.g. Health insurance, Remote work'),
+                      onFieldSubmitted: (_) => _addBenefit(),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _addButton(_addBenefit, accent),
+                ],
+              ),
+              if (_benefits.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _benefits.asMap().entries.map((e) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: AppColors.success.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            e.value,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.success,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _benefits.removeAt(e.key)),
+                            child: Icon(Icons.close_rounded,
+                                size: 14, color: AppColors.success),
                           ),
                         ],
                       ),

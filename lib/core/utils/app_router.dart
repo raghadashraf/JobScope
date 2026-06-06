@@ -17,6 +17,7 @@ import '../../features/career_coach/presentation/career_coach_screen.dart';
 import '../../features/cv_management/presentation/ai_cv_builder_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/cv_management/presentation/cv_screen.dart';
+import '../../features/cv_management/presentation/edit_cv_profile_screen.dart';
 import '../../features/home/presentation/candidate_home_screen.dart';
 import '../../features/home/presentation/post_job_screen.dart';
 import '../../features/home/presentation/recruiter_home_screen.dart';
@@ -47,6 +48,7 @@ class AppRoutes {
   static const applicationDetail = '/application-detail';
   static const editProfile = '/edit-profile';
   static const cv = '/cv';
+  static const editCvProfile = '/edit-cv-profile';
   static const postJob = '/post-job';
   static const jobApplicants = '/job-applicants';
   static const applicantDetail = '/applicant-detail';
@@ -68,7 +70,7 @@ class AppRoutes {
 }
 
 /// Bump when adding/removing root [GoRoute]s so [routerProvider] recreates.
-const kRouterRoutesVersion = 2;
+const kRouterRoutesVersion = 3;
 
 final routerRoutesVersionProvider =
     Provider<int>((_) => kRouterRoutesVersion);
@@ -143,6 +145,10 @@ List<RouteBase> _buildRootRoutes() => [
       GoRoute(
         path: AppRoutes.cv,
         builder: (_, _) => const CvScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.editCvProfile,
+        builder: (_, _) => const EditCvProfileScreen(),
       ),
       GoRoute(
         path: AppRoutes.postJob,

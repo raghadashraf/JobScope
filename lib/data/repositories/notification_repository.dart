@@ -114,6 +114,27 @@ class NotificationRepository {
     );
   }
 
+  Future<void> notifyCandidateJobMatch({
+    required String candidateId,
+    required JobModel job,
+    required int matchScore,
+  }) async {
+    await create(
+      AppNotificationModel(
+        id: '',
+        type: NotificationType.newJob,
+        title: 'New job match',
+        body:
+            '${job.title} at ${job.company} — $matchScore% skill match. Tap to view.',
+        createdAt: DateTime.now(),
+        relatedId: job.id,
+        jobId: job.id,
+        jobTitle: job.title,
+      ),
+      candidateId,
+    );
+  }
+
   Future<void> notifyNewMessage({
     required String recipientId,
     required String senderId,

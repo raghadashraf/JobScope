@@ -9,7 +9,10 @@ import '../../../data/models/application_model.dart';
 import '../../../data/models/job_model.dart';
 import '../../../data/models/notification_model.dart';
 import '../../../data/repositories/notification_repository.dart';
+import '../../../core/services/job_match_notification_service.dart';
 import '../../auth/data/auth_providers.dart';
+import '../../cv_management/data/cv_providers.dart';
+import '../../job_listing/data/job_providers.dart';
 import '../../settings/data/settings_providers.dart';
 
 final notificationRepositoryProvider =
@@ -141,4 +144,38 @@ class NotificationActions {
 
 final notificationActionsProvider = Provider<NotificationActions>((ref) {
   return NotificationActions(ref.read(notificationRepositoryProvider));
+});
+
+final jobMatchNotificationServiceProvider =
+    Provider<JobMatchNotificationService>(
+        (_) => JobMatchNotificationService());
+
+/// Scans active jobs vs candidate CV skills and creates inbox alerts (once per job).
+final jobMatchNotificationBootstrapProvider = Provider<void>((ref) {
+  final user = ref.watch(firebaseUserProvider).value;
+  if (user == null) return;
+
+  Timer? debounce;
+
+  Future<void> sync() async {
+    if (!ref.read(notificationsEnabledProvider)) return;
+    final cv = ref.read(cvStreamProvider).value;
+    final jobs = ref.read(jobsStreamProvider).value ?? [];
+    await ref.read(jobMatchNotificationServiceProvider).syncMatchNotifications(
+          candidateId: user.uid,
+          cv: cv,
+          jobs: jobs,
+          notifications: ref.read(notificationRepositoryProvider),
+        );
+  }
+
+  void scheduleSync() {
+    debounce?.cancel();
+    debounce = Timer(const Duration(milliseconds: 800), sync);
+  }
+
+  ref.onDispose(() => debounce?.cancel());
+  ref.listen(jobsStreamProvider, (_, _) => scheduleSync());
+  ref.listen(cvStreamProvider, (_, _) => scheduleSync());
+  scheduleSync();
 });

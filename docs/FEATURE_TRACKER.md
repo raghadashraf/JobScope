@@ -28,10 +28,10 @@ Living log of shipped work. **Update this file at the end of every feature slice
 | R2 | Raghad | Job listings (candidate) | ✅ | [R2](#r2-job-listings-candidate) |
 | R3 | Raghad | Models + job CRUD | 🟡 | [R3](#r3-firestore-models--job-crud) |
 | R4 | Raghad | Profile edit | ✅ | [R4](#r4-profile-edit) |
-| H1 | Rahma | Job posting (recruiter) | 🟡 | [H1](#h1-job-posting-recruiter) |
-| H2 | Rahma | AI job matching | 🟡 | [H2](#h2-ai-job-matching) — recruiter sort unblocked by D0-1 |
-| H3 | Rahma | Applicants list + detail | 🟡 | [H3](#h3-applicants-list--detail) — sort uses `matchScore` |
-| H4 | Rahma | Recruiter analytics | 🟡 | [H4](#h4-recruiter-analytics) |
+| H1 | Rahma | Job posting (recruiter) | 🟡 | [H1](#h1-job-posting-recruiter) — education, benefits, skill autocomplete added |
+| H2 | Rahma | AI job matching | ✅ | [H2](#h2-ai-job-matching) |
+| H3 | Rahma | Applicants list + detail | ✅ | [H3](#h3-applicants-list--detail) |
+| H4 | Rahma | Recruiter analytics | ✅ | [H4](#h4-recruiter-analytics) |
 | D0 | David | Prerequisite fixes | ⬜ | [DAVID_PLAN.md](./DAVID_PLAN.md) |
 | D1 | David | AI training module | ✅ | [D1](#d1-ai-training-module) |
 | D2 | David | Apply flow + status | ✅ | [D2](#d2-apply-flow--acceptreject) |
@@ -44,7 +44,7 @@ Living log of shipped work. **Update this file at the end of every feature slice
 
 ### R1 — CV upload + AI parsing
 
-**Status:** 🟡 (~95%)
+**Status:** 🟡 (~98%)
 
 | Checklist item | Status |
 |----------------|--------|
@@ -53,24 +53,22 @@ Living log of shipped work. **Update this file at the end of every feature slice
 | URL on `users/{uid}` | ✅ |
 | PDF extract (Syncfusion) | ✅ |
 | Gemini parse skills/exp/edu | ✅ |
-| Profile strength 0–100 | ✅ |
-| Display on profile screen | 🟡 strength only; full data on `/cv` |
+| Profile strength 0–100 | ✅ computed via `CvProfileStrength` (not hardcoded) |
+| Display on profile screen | ✅ uses `effectiveProfileStrength` |
 | Update/replace CV | ✅ |
+| **Manual profile edit** | ✅ `edit_cv_profile_screen.dart` — skills / experience / education |
 
-**Key files:** `cv_parser_service.dart`, `ai_service.dart`, `cv_providers.dart`, `cv_screen.dart`, `dashboard_screen.dart`
+**Key files:** `cv_parser_service.dart`, `ai_service.dart`, `cv_providers.dart`, `cv_screen.dart`, `edit_cv_profile_screen.dart`, `cv_profile_strength.dart`, `dashboard_screen.dart`
 
-**Firestore:** `cvs/{uid}`, `users/{uid}.cvUrl`, `users/{uid}.profileStrength`
+**Open:** Optional skills teaser on `profile_screen.dart` (not blocking).
 
 #### Implementation log
 
-<!-- Newest first. Example:
-### R1-slice-xxx — YYYY-MM-DD
-...
--->
+### R1 — manual CV profile + strength fix + job match alerts — 2026-06-06
 
-*No per-slice log yet — baseline from codebase audit 2026-06-04.*
+**Slices:** Edit CV profile screen; shared profile strength calculator; job match inbox notifications when skills match new jobs.
 
-**Open:** Optional skills summary on `profile_screen.dart` (not blocking).
+**Files:** `edit_cv_profile_screen.dart`, `cv_profile_strength.dart`, `job_match_notification_service.dart`, `cv_parser_service.dart`, `cv_screen.dart`, `notification_repository.dart`, `notification_providers.dart`, `candidate_home_screen.dart`
 
 ---
 
@@ -147,72 +145,88 @@ Living log of shipped work. **Update this file at the end of every feature slice
 
 ### H1 — Job posting (recruiter)
 
-**Status:** 🟡 (~75%)
+**Status:** 🟡 (~85%)
 
 | Checklist item | Status |
 |----------------|--------|
 | Multi-step wizard | 🟡 single scroll form |
 | Basic info / requirements / skills / salary | ✅ |
-| Education + benefits fields | ⬜ |
-| Skills autocomplete | ⬜ manual chips |
+| Education + benefits fields | ✅ |
+| Skills autocomplete | ✅ Autocomplete + quick-add chips |
 | Save / edit | ✅ |
 | Delete | 🟡 deactivate in UI; `deleteJob()` in repo unused |
 | My posted jobs list | ✅ |
 
-**Key files:** `post_job_screen.dart`, `recruiter_jobs_screen.dart`, `job_repository.dart`
+**Key files:** `post_job_screen.dart`, `recruiter_jobs_screen.dart`, `job_repository.dart`, `job_model.dart`
 
 #### Implementation log
 
-*Baseline audit 2026-06-04.*
+### H1 — education, benefits, skill autocomplete — 2026-06-06
+
+**Slices:** `educationLevel`, `experienceLevel`, `benefits[]` on JobModel + post form; skill Autocomplete with suggestions.
+
+**Files:** `job_model.dart`, `post_job_screen.dart`
+
+**Open:** Multi-step wizard; hard delete (optional).
 
 ---
 
 ### H2 — AI job matching
 
-**Status:** 🟡 (~85%)
+**Status:** ✅
 
 | Checklist item | Status |
 |----------------|--------|
 | Embeddings + similarity | ✅ |
 | Match badge + sort (candidate) | ✅ |
 | Match reasons sheet | ✅ |
-| Match on applications (recruiter) | ⬜ `matchScore` not saved on apply |
+| Match on applications (recruiter) | ✅ `matchScore` on apply + skill overlap fallback |
 
-**Key files:** `job_matching_service.dart`, `gemini_embedding_service.dart`, `ai_providers.dart`, `match_badge_widget.dart`, `match_reasons_sheet.dart`
+**Key files:** `job_matching_service.dart`, `gemini_embedding_service.dart`, `ai_providers.dart`, `match_badge_widget.dart`, `match_reasons_sheet.dart`, `application_providers.dart`
 
 #### Implementation log
 
-*Baseline audit 2026-06-04.*
+### H2 — matchScore polish — 2026-06-06
 
-**Note:** Recruiter applicant sort uses `applications.matchScore` — populated on apply (D0-1 ✅).
+**Slices:** Blended embedding + skill overlap scoring; fallback when API fails; apply computes score for any parsed CV.
+
+**Files:** `job_matching_service.dart`, `application_providers.dart`, `ai_providers.dart`
 
 ---
 
 ### H3 — Applicants list + detail
 
-**Status:** 🟡 (~80%)
+**Status:** ✅
 
 **Key files:** `job_applicants_screen.dart`, `applicant_detail_screen.dart`, `recruiter_providers.dart`
 
-**Gaps:** list sort by match ineffective without stored score; CV “preview” is parsed text not PDF; no skill breakdown on recruiter side.
+**Shipped:** List sorted by `matchScore` (tie-break: applied date); match badge on cards; View CV; recruiter **Why this match?** sheet on detail.
 
 #### Implementation log
 
-*Baseline audit 2026-06-04.*
+### H3 — matchScore UI — 2026-06-06
+
+**Files:** `job_applicants_screen.dart`, `applicant_detail_screen.dart`, `recruiter_providers.dart`
 
 ---
 
 ### H4 — Recruiter analytics
 
-**Status:** 🟡 (~85%)
+**Status:** ✅
 
-**Key files:** `recruiter_analytics_screen.dart`, `recruiter_providers.dart` (`recruiterAnalyticsProvider`)
+**Key files:** `recruiter_analytics_screen.dart`, `recruiter_providers.dart` (`recruiterAnalyticsProvider`, `recruiterApplicantTopSkillsProvider`)
 
-**Gaps:** acceptance rate not displayed; top skills from job postings not applicant CVs.
+**Shipped:** Acceptance rate % (accepted ÷ accepted+rejected); top skills from applicant CVs.
 
 #### Implementation log
 
-*Baseline audit 2026-06-04.*
+### H4 — analytics polish — 2026-06-06
+
+**Files:** `recruiter_analytics_screen.dart`, `recruiter_providers.dart`
+
+### D0-2 — acceptance rate UI — 2026-06-06
+
+**Status:** ✅ (was optional Rahma task)
 
 ---
 
@@ -386,7 +400,7 @@ Living log of shipped work. **Update this file at the end of every feature slice
 | ID | Item | Owner | Status |
 |----|------|-------|--------|
 | D0-1 | Persist `matchScore` on apply | David | ✅ |
-| D0-2 | (Optional) Rahma analytics acceptance rate UI | Rahma | ⬜ |
+| D0-2 | (Optional) Rahma analytics acceptance rate UI | Rahma | ✅ |
 
 #### Implementation log
 
@@ -428,6 +442,22 @@ Living log of shipped work. **Update this file at the end of every feature slice
 ---
 
 ## Handoff — 2026-06-06 — @agent
+
+**Completed:** matchScore professional pipeline (blended scoring + fallback); recruiter applicants/analytics polish; H1 education/benefits/skill autocomplete
+
+**Files touched:** `job_matching_service.dart`, `application_providers.dart`, `ai_providers.dart`, `job_model.dart`, `post_job_screen.dart`, `recruiter_providers.dart`, `job_applicants_screen.dart`, `applicant_detail_screen.dart`, `recruiter_analytics_screen.dart`, `test/job_matching_service_test.dart`
+
+**Tracker updated:** H1, H2, H3, H4, D0-2
+
+**Verify:** C applies with CV → Firestore `matchScore` set → R applicants list sorted with badges → detail **Why this match?** → Analytics shows acceptance rate % and applicant skill chart
+
+**Next:** H1 multi-step wizard (optional); manual TEST_CASES H2/H3 sign-off
+
+**Blockers:** none
+
+---
+
+## Handoff — 2026-06-06 — @agent (earlier)
 
 **Completed:** Candidate browse-jobs back button; profile photo camera picker + persistence fix; dashboard messages/calendar header icons
 

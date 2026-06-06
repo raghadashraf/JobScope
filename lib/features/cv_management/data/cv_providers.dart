@@ -7,22 +7,31 @@ import '../../auth/data/auth_providers.dart';
 final cvParserServiceProvider =
     Provider<CvParserService>((_) => CvParserService());
 
-// ─── Stream: all CVs for current user (newest first) ─────────────────────────
-final userCvsStreamProvider = StreamProvider<List<CvModel>>((ref) {
-  final user = ref.watch(firebaseUserProvider).value;
-  if (user == null) return Stream.value([]);
-
-  final service = ref.read(cvParserServiceProvider);
-  // One-time migration of legacy cvs/{uid} → users/{uid}/cvs/{id}.
-  service.migrateLegacyCvIfNeeded(user.uid);
-
-  return service.userCvsStream(user.uid);
+// ─── One-time profile migration (cached per uid) ───────────────────────────────
+final cvProfileMigrationProvider = FutureProvider.family<void, String>((ref, uid) {
+  ref.keepAlive();
+  return ref.read(cvParserServiceProvider).ensureSingleProfile(uid);
 });
 
-// ─── Stream: latest CV (dashboard evaluation card) ───────────────────────────
+// ─── Stream: single candidate profile ─────────────────────────────────────────
 final cvStreamProvider = StreamProvider<CvModel?>((ref) {
-  final list = ref.watch(userCvsStreamProvider).value ?? [];
-  return Stream.value(list.isEmpty ? null : list.first);
+  ref.keepAlive();
+  final uid = ref.watch(firebaseUserProvider.select((async) => async.value?.uid));
+  if (uid == null) return Stream.value(null);
+
+  final service = ref.read(cvParserServiceProvider);
+  return Stream.fromFuture(ref.read(cvProfileMigrationProvider(uid).future))
+      .asyncExpand((_) => service.profileStream(uid));
+});
+
+/// Back-compat: derived from [cvStreamProvider] (no second Firestore subscription).
+final userCvsStreamProvider = Provider<AsyncValue<List<CvModel>>>((ref) {
+  return ref.watch(cvStreamProvider).when(
+        data: (profile) =>
+            AsyncData(profile == null ? <CvModel>[] : [profile]),
+        loading: () => const AsyncLoading<List<CvModel>>(),
+        error: (e, st) => AsyncError(e, st),
+      );
 });
 
 final cvByIdProvider =
@@ -166,21 +175,21 @@ class CvUploadNotifier extends Notifier<CvUploadState> {
     return raw.replaceFirst('Exception: ', '');
   }
 
-  Future<void> deleteCv({String? cvId}) async {
+  Future<void> removeAttachedFile() async {
     final service = ref.read(cvParserServiceProvider);
     final user = ref.read(firebaseUserProvider).value;
     final uid = user?.uid ?? '';
-
     if (uid.isEmpty) return;
 
     state = state.copyWith(status: CvUploadStatus.deleting);
     try {
-      await service.deleteCv(uid, cvId: cvId);
+      await service.removeAttachedFile(uid);
       state = const CvUploadState(status: CvUploadStatus.idle);
     } on Exception catch (e) {
       state = CvUploadState(
         status: CvUploadStatus.error,
-        errorMessage: 'Failed to delete CV: ${e.toString().replaceFirst('Exception: ', '')}',
+        errorMessage:
+            'Failed to remove file: ${e.toString().replaceFirst('Exception: ', '')}',
       );
     }
   }
@@ -190,3 +199,40 @@ class CvUploadNotifier extends Notifier<CvUploadState> {
 
 final cvUploadProvider =
     NotifierProvider<CvUploadNotifier, CvUploadState>(CvUploadNotifier.new);
+
+// ─── Manual CV profile edit ───────────────────────────────────────────────────
+class CvProfileEditNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  Future<String?> save({
+    required List<String> skills,
+    required List<WorkExperience> workExperience,
+    required List<Education> education,
+    String? experienceLevel,
+    String? educationLevel,
+  }) async {
+    final user = ref.read(firebaseUserProvider).value;
+    if (user == null) return 'Not logged in';
+
+    state = true;
+    try {
+      await ref.read(cvParserServiceProvider).saveProfile(
+            uid: user.uid,
+            skills: skills,
+            workExperience: workExperience,
+            education: education,
+            experienceLevel: experienceLevel,
+            educationLevel: educationLevel,
+          );
+      return null;
+    } on Exception catch (e) {
+      return e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      state = false;
+    }
+  }
+}
+
+final cvProfileEditProvider =
+    NotifierProvider<CvProfileEditNotifier, bool>(CvProfileEditNotifier.new);

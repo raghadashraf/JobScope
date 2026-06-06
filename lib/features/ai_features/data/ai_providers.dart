@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/firestore_helpers.dart';
 import '../../../core/services/ai_service.dart';
+import '../../../core/constants/profile_levels.dart';
 import '../../../core/services/job_matching_service.dart';
 import '../../../data/models/cv_model.dart';
 import '../../../data/models/job_model.dart';
@@ -56,7 +57,11 @@ final skillQuizProvider = FutureProvider.autoDispose
 final jobMatchResultProvider =
     FutureProvider.autoDispose.family<MatchResult?, String>((ref, jobId) async {
   final cv = ref.watch(cvStreamProvider).value;
-  if (cv == null || cv.skills.isEmpty) return null;
+  if (cv == null) return null;
+  final hasMatchData = cv.skills.isNotEmpty ||
+      ProfileLevels.resolveCandidateExperience(cv) != null ||
+      ProfileLevels.resolveCandidateEducation(cv) != null;
+  if (!hasMatchData) return null;
   final job = await ref.read(jobRepositoryProvider).fetchJob(jobId);
   if (job == null) return null;
   return ref.read(jobMatchingServiceProvider).calculateMatch(cv, job);
@@ -76,7 +81,7 @@ final matchSortedJobsProvider =
         final result = await service.calculateMatch(cv, job);
         return (job: job, score: result.score);
       } catch (_) {
-        return (job: job, score: 0);
+        return (job: job, score: service.structuredMatchScore(cv, job));
       }
     }),
   );

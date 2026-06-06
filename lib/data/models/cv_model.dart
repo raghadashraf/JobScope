@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/utils/cv_profile_strength.dart';
+
 class CvModel {
   /// Firestore doc id in `users/{uid}/cvs/{id}`.
   final String id;
@@ -11,6 +13,10 @@ class CvModel {
   final List<String> skills;
   final List<WorkExperience> workExperience;
   final List<Education> education;
+  /// Canonical ids: junior | mid | senior | lead
+  final String? experienceLevel;
+  /// Canonical labels: High School, Bachelor's, Master's, PhD, …
+  final String? educationLevel;
   final int profileStrength; // 0–100
 
   CvModel({
@@ -23,10 +29,15 @@ class CvModel {
     required this.skills,
     required this.workExperience,
     required this.education,
+    this.experienceLevel,
+    this.educationLevel,
     required this.profileStrength,
   });
 
   bool get hasFile => fileUrl.isNotEmpty;
+
+  /// Live score from current fields (fixes stale stored values in UI).
+  int get effectiveProfileStrength => CvProfileStrength.fromCv(this);
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -38,6 +49,8 @@ class CvModel {
         'skills': skills,
         'workExperience': workExperience.map((e) => e.toMap()).toList(),
         'education': education.map((e) => e.toMap()).toList(),
+        'experienceLevel': experienceLevel,
+        'educationLevel': educationLevel,
         'profileStrength': profileStrength,
       };
 
@@ -57,6 +70,8 @@ class CvModel {
         education: (map['education'] as List<dynamic>? ?? [])
             .map((e) => Education.fromMap(Map<String, dynamic>.from(e)))
             .toList(),
+        experienceLevel: map['experienceLevel'],
+        educationLevel: map['educationLevel'],
         profileStrength: map['profileStrength'] ?? 0,
       );
 
@@ -65,9 +80,12 @@ class CvModel {
     String? fileUrl,
     String? fileName,
     String? storagePath,
+    DateTime? uploadedAt,
     List<String>? skills,
     List<WorkExperience>? workExperience,
     List<Education>? education,
+    String? experienceLevel,
+    String? educationLevel,
     int? profileStrength,
   }) =>
       CvModel(
@@ -76,10 +94,12 @@ class CvModel {
         fileUrl: fileUrl ?? this.fileUrl,
         fileName: fileName ?? this.fileName,
         storagePath: storagePath ?? this.storagePath,
-        uploadedAt: uploadedAt,
+        uploadedAt: uploadedAt ?? this.uploadedAt,
         skills: skills ?? this.skills,
         workExperience: workExperience ?? this.workExperience,
         education: education ?? this.education,
+        experienceLevel: experienceLevel ?? this.experienceLevel,
+        educationLevel: educationLevel ?? this.educationLevel,
         profileStrength: profileStrength ?? this.profileStrength,
       );
 }

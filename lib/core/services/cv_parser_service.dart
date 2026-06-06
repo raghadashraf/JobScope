@@ -1,16 +1,24 @@
 import 'dart:typed_data';
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../../core/utils/firestore_helpers.dart';
+import '../../core/utils/cv_profile_strength.dart';
+import '../../core/constants/profile_levels.dart';
 import '../../data/models/cv_model.dart';
 import '../../data/repositories/user_stats_repository.dart';
 import 'ai_service.dart';
 
 const int _maxFileSizeBytes = 25 * 1024 * 1024; // 25 MB
 
+/// One canonical candidate profile doc: users/{uid}/cvs/profile
+const String kCandidateProfileDocId = 'profile';
+
 class CvParserService {
+  final _ensureLocks = <String, Future<void>>{};
   final FirebaseFirestore _firestore = appFirestore;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final AiService _aiService = AiService();
@@ -73,62 +81,396 @@ class CvParserService {
     );
   }
 
-  /// Stage 2: call Gemini to parse the CV text, then save to Firestore.
+  /// Stage 2: parse CV text and merge into the single candidate profile.
   Future<CvModel> parseAndSave(CvUploadResult upload) async {
-    final cvModel = await _aiService.parseCv(
+    final existing = await fetchProfile(upload.uid);
+    final parsed = await _aiService.parseCv(
       cvText: upload.cvText,
       uid: upload.uid,
       fileUrl: upload.fileUrl,
       fileName: upload.fileName,
     );
 
-    return _insertCv(
-      cvModel.copyWith(storagePath: upload.storagePath),
-      storagePath: upload.storagePath,
+    final merged = _mergeProfiles(
+      existing,
+      parsed.copyWith(storagePath: upload.storagePath),
     );
+    return _saveProfileDoc(merged, storagePath: upload.storagePath);
   }
 
-  /// Save uploaded file without AI parsing.
+  /// Attach a file to the single profile without AI parsing.
   Future<CvModel> saveBasicUpload(CvUploadResult upload) async {
-    final cvModel = CvModel(
-      uid: upload.uid,
+    final existing = await fetchProfile(upload.uid);
+    final base = existing ??
+        CvModel(
+          uid: upload.uid,
+          fileUrl: '',
+          fileName: 'My Profile',
+          uploadedAt: DateTime.now(),
+          skills: const [],
+          workExperience: const [],
+          education: const [],
+          profileStrength: 0,
+        );
+
+    final withFile = base.copyWith(
       fileUrl: upload.fileUrl,
       fileName: upload.fileName,
       storagePath: upload.storagePath,
       uploadedAt: DateTime.now(),
-      skills: const [],
-      workExperience: const [],
-      education: const [],
-      profileStrength: 10,
     );
-
-    return _insertCv(cvModel, storagePath: upload.storagePath);
+    return _saveProfileDoc(
+      withFile.copyWith(profileStrength: CvProfileStrength.fromCv(withFile)),
+      storagePath: upload.storagePath,
+    );
   }
 
-  /// Insert a new CV doc (supports multiple CVs per user).
-  Future<CvModel> insertCv(CvModel cv, {String? storagePath}) =>
-      _insertCv(cv, storagePath: storagePath);
+  /// Upsert skills / experience / education on the single profile.
+  Future<CvModel> saveProfile({
+    required String uid,
+    required List<String> skills,
+    required List<WorkExperience> workExperience,
+    required List<Education> education,
+    String? experienceLevel,
+    String? educationLevel,
+  }) async {
+    final existing = await fetchProfile(uid);
+    final base = existing ??
+        CvModel(
+          uid: uid,
+          fileUrl: '',
+          fileName: 'My Profile',
+          uploadedAt: DateTime.now(),
+          skills: const [],
+          workExperience: const [],
+          education: const [],
+          profileStrength: 0,
+        );
 
-  Future<CvModel> _insertCv(CvModel cv, {String? storagePath}) async {
-    final path = storagePath ?? cv.storagePath;
-    CvModel saved;
+    final resolvedExp = experienceLevel ??
+        ProfileLevels.inferExperienceLevel(workExperience.length) ??
+        base.experienceLevel;
+    final resolvedEdu = educationLevel ??
+        ProfileLevels.inferEducationLevel(education) ??
+        base.educationLevel;
+
+    final draft = base.copyWith(
+      skills: skills,
+      workExperience: workExperience,
+      education: education,
+      experienceLevel: resolvedExp,
+      educationLevel: resolvedEdu,
+    );
+    final updated =
+        draft.copyWith(profileStrength: CvProfileStrength.fromCv(draft));
+    return _saveProfileDoc(updated);
+  }
+
+  /// Merge into the single profile (AI builder and legacy callers).
+  Future<CvModel> insertCv(CvModel cv, {String? storagePath}) async {
+    final existing = await fetchProfile(cv.uid);
+    return _saveProfileDoc(
+      _mergeProfiles(existing, cv),
+      storagePath: storagePath ?? cv.storagePath,
+    );
+  }
+
+  /// Remove attached PDF/DOCX but keep profile skills and experience.
+  Future<CvModel?> removeAttachedFile(String uid) async {
+    final existing = await fetchProfile(uid);
+    if (existing == null || !existing.hasFile) return existing;
+
+    if (existing.storagePath.isNotEmpty) {
+      try {
+        await _storage.ref().child(existing.storagePath).delete();
+      } catch (_) {}
+    } else if (existing.fileUrl.isNotEmpty) {
+      try {
+        await _storage.refFromURL(existing.fileUrl).delete();
+      } catch (_) {}
+    }
+
+    final cleared = existing.copyWith(
+      fileUrl: '',
+      fileName: existing.fileName == 'My Profile' ? 'My Profile' : 'My Profile',
+      storagePath: '',
+    );
+    final updated =
+        cleared.copyWith(profileStrength: CvProfileStrength.fromCv(cleared));
+    return _saveProfileDoc(updated);
+  }
+
+  Future<CvModel?> fetchProfile(String uid) async {
+    try {
+      final doc = await _userCvs(uid).doc(kCandidateProfileDocId).get();
+      if (doc.exists) {
+        return CvModel.fromMap(
+          doc.data() as Map<String, dynamic>,
+          docId: kCandidateProfileDocId,
+        );
+      }
+    } catch (_) {}
 
     try {
-      final ref = _userCvs(cv.uid).doc();
-      final id = ref.id;
-      saved = cv.copyWith(id: id);
+      final legacy = await _firestore.collection('cvs').doc(uid).get();
+      if (legacy.exists) {
+        return CvModel.fromMap(
+          legacy.data() as Map<String, dynamic>,
+          docId: uid,
+        );
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  Stream<CvModel?> profileStream(String uid) {
+    CvModel? previous;
+    var hasEmitted = false;
+    return _userCvs(uid)
+        .doc(kCandidateProfileDocId)
+        .snapshots()
+        .map((doc) {
+      if (!doc.exists) return null;
+      return CvModel.fromMap(
+        doc.data() as Map<String, dynamic>,
+        docId: kCandidateProfileDocId,
+      );
+    }).where((cv) {
+      if (!hasEmitted) {
+        hasEmitted = true;
+        previous = cv;
+        return true;
+      }
+      if (previous != null &&
+          cv != null &&
+          _profileContentEquals(previous!, cv)) {
+        return false;
+      }
+      if (previous == null && cv == null) {
+        return false;
+      }
+      previous = cv;
+      return true;
+    });
+  }
+
+  /// Migrate legacy data and merge duplicate profile docs into one.
+  Future<void> ensureSingleProfile(String uid) {
+    return _ensureLocks.putIfAbsent(uid, () async {
+      try {
+        await migrateLegacyCvIfNeeded(uid);
+        await consolidateProfiles(uid);
+      } finally {
+        _ensureLocks.remove(uid);
+      }
+    });
+  }
+
+  Future<void> consolidateProfiles(String uid) async {
+    final all = await _fetchAllCvDocs(uid);
+    if (all.isEmpty) return;
+
+    if (all.length == 1 && all.first.id == kCandidateProfileDocId) return;
+
+    final extras = all.where((c) => c.id != kCandidateProfileDocId).toList();
+    CvModel? canonical;
+    for (final cv in all) {
+      if (cv.id == kCandidateProfileDocId) {
+        canonical = cv;
+        break;
+      }
+    }
+
+    if (canonical != null && extras.isEmpty) return;
+
+    all.sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
+    var merged = canonical ?? all.first;
+    final mergeSources = canonical == null ? all.skip(1) : extras;
+    for (final extra in mergeSources) {
+      merged = _mergeProfiles(merged, extra);
+    }
+
+    final latestFile = all.firstWhere((c) => c.hasFile, orElse: () => all.first);
+    merged = merged.copyWith(
+      id: kCandidateProfileDocId,
+      fileUrl: latestFile.fileUrl,
+      fileName: latestFile.hasFile ? latestFile.fileName : merged.fileName,
+      storagePath: latestFile.storagePath,
+      uploadedAt: latestFile.hasFile ? latestFile.uploadedAt : merged.uploadedAt,
+      profileStrength: CvProfileStrength.fromCv(merged),
+    );
+
+    final base = canonical ?? merged;
+    if (!_profileContentEquals(base, merged)) {
+      await _saveProfileDoc(merged, storagePath: merged.storagePath);
+    }
+
+    for (final cv in all) {
+      if (cv.id == kCandidateProfileDocId) continue;
+      try {
+        if (cv.id == uid) {
+          final legacy = await _firestore.collection('cvs').doc(uid).get();
+          if (legacy.exists) {
+            await _deleteCvDocData(legacy.data()!);
+            await legacy.reference.delete();
+          }
+        } else {
+          final doc = await _userCvs(uid).doc(cv.id).get();
+          if (doc.exists) {
+            if (cv.hasFile && cv.fileUrl != merged.fileUrl) {
+              await _deleteCvDocData(doc.data() as Map<String, dynamic>);
+            }
+            await doc.reference.delete();
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  CvModel _mergeProfiles(CvModel? existing, CvModel incoming) {
+    if (existing == null) {
+      return incoming.copyWith(
+        id: kCandidateProfileDocId,
+        fileName: incoming.fileName.isNotEmpty ? incoming.fileName : 'My Profile',
+      );
+    }
+
+    final mergedSkills = _mergeStringLists(existing.skills, incoming.skills);
+    final mergedEducation =
+        _mergeEducationLists(existing.education, incoming.education);
+    final mergedExperience = _mergeWorkExperienceLists(
+      existing.workExperience,
+      incoming.workExperience,
+    );
+
+    return existing.copyWith(
+      id: kCandidateProfileDocId,
+      fileUrl: incoming.fileUrl.isNotEmpty ? incoming.fileUrl : existing.fileUrl,
+      fileName: incoming.fileName.isNotEmpty ? incoming.fileName : existing.fileName,
+      storagePath:
+          incoming.storagePath.isNotEmpty ? incoming.storagePath : existing.storagePath,
+      uploadedAt: incoming.hasFile ? incoming.uploadedAt : existing.uploadedAt,
+      skills: mergedSkills,
+      workExperience: mergedExperience,
+      education: mergedEducation,
+      experienceLevel: incoming.experienceLevel ?? existing.experienceLevel,
+      educationLevel: incoming.educationLevel ?? existing.educationLevel,
+      profileStrength: CvProfileStrength.fromCv(
+        existing.copyWith(
+          skills: mergedSkills,
+          workExperience: mergedExperience,
+          education: mergedEducation,
+          experienceLevel: incoming.experienceLevel ?? existing.experienceLevel,
+          educationLevel: incoming.educationLevel ?? existing.educationLevel,
+          fileUrl: incoming.fileUrl.isNotEmpty ? incoming.fileUrl : existing.fileUrl,
+        ),
+      ),
+    );
+  }
+
+  List<String> _mergeStringLists(List<String> a, List<String> b) {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final raw in [...a, ...b]) {
+      final key = raw.toLowerCase().trim();
+      if (key.isEmpty || seen.contains(key)) continue;
+      seen.add(key);
+      out.add(raw.trim());
+    }
+    return out;
+  }
+
+  List<WorkExperience> _mergeWorkExperienceLists(
+    List<WorkExperience> a,
+    List<WorkExperience> b,
+  ) {
+    final out = List<WorkExperience>.from(a);
+    for (final item in b) {
+      final key =
+          '${item.title.toLowerCase().trim()}|${item.company.toLowerCase().trim()}';
+      if (out.any((x) =>
+          '${x.title.toLowerCase().trim()}|${x.company.toLowerCase().trim()}' ==
+          key)) {
+        continue;
+      }
+      out.add(item);
+    }
+    return out;
+  }
+
+  List<Education> _mergeEducationLists(List<Education> a, List<Education> b) {
+    final out = List<Education>.from(a);
+    for (final item in b) {
+      final key =
+          '${item.degree.toLowerCase().trim()}|${item.institution.toLowerCase().trim()}';
+      if (out.any((x) =>
+          '${x.degree.toLowerCase().trim()}|${x.institution.toLowerCase().trim()}' ==
+          key)) {
+        continue;
+      }
+      out.add(item);
+    }
+    return out;
+  }
+
+  bool _profileContentEquals(CvModel a, CvModel b) {
+    if (a.fileUrl != b.fileUrl ||
+        a.fileName != b.fileName ||
+        a.storagePath != b.storagePath ||
+        a.experienceLevel != b.experienceLevel ||
+        a.educationLevel != b.educationLevel) {
+      return false;
+    }
+    if (a.skills.length != b.skills.length ||
+        a.workExperience.length != b.workExperience.length ||
+        a.education.length != b.education.length) {
+      return false;
+    }
+    for (var i = 0; i < a.skills.length; i++) {
+      if (a.skills[i] != b.skills[i]) return false;
+    }
+    for (var i = 0; i < a.workExperience.length; i++) {
+      final x = a.workExperience[i];
+      final y = b.workExperience[i];
+      if (x.title != y.title ||
+          x.company != y.company ||
+          x.duration != y.duration ||
+          x.description != y.description) {
+        return false;
+      }
+    }
+    for (var i = 0; i < a.education.length; i++) {
+      final x = a.education[i];
+      final y = b.education[i];
+      if (x.degree != y.degree ||
+          x.field != y.field ||
+          x.institution != y.institution ||
+          x.year != y.year) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Future<CvModel> _saveProfileDoc(CvModel cv, {String? storagePath}) async {
+    final path = storagePath ?? cv.storagePath;
+    final saved = cv.copyWith(id: kCandidateProfileDocId);
+
+    try {
       await firestoreWrite(
-        ref.set(firestoreEncode({...saved.toMap(), 'id': id})),
+        _userCvs(cv.uid).doc(kCandidateProfileDocId).set(
+              firestoreEncode({...saved.toMap(), 'id': kCandidateProfileDocId}),
+              SetOptions(merge: true),
+            ),
       );
     } on FirebaseException catch (e) {
       if (e.code != 'permission-denied') rethrow;
-      // Fallback: legacy single-doc path (rules already allow /cvs/{docId}).
-      saved = cv.copyWith(id: cv.uid);
       await firestoreWrite(
-        _firestore
-            .collection('cvs')
-            .doc(cv.uid)
-            .set(firestoreEncode(saved.toMap()), SetOptions(merge: true)),
+        _firestore.collection('cvs').doc(cv.uid).set(
+              firestoreEncode(saved.toMap()),
+              SetOptions(merge: true),
+            ),
       );
     }
 
@@ -138,52 +480,65 @@ class CvParserService {
         await _userStats.appendCvStoragePath(cv.uid, path);
       } catch (_) {}
     }
-
     return saved;
   }
 
   Future<void> _updateUserLatestCv(
       String uid, CvModel cv, String storagePath) async {
+    final updates = <String, dynamic>{
+      'latestCvId': kCandidateProfileDocId,
+      'cvUrl': cv.fileUrl,
+      'profileStrength': cv.profileStrength,
+    };
+    if (storagePath.isNotEmpty) {
+      updates['cvStoragePaths'] = FieldValue.arrayUnion([storagePath]);
+    }
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(uid).get();
+      final data = userDoc.data();
+      if (data != null) {
+        final sameMeta = data['latestCvId'] == kCandidateProfileDocId &&
+            (data['cvUrl'] as String? ?? '') == cv.fileUrl &&
+            (data['profileStrength'] as num?)?.toInt() == cv.profileStrength;
+        if (sameMeta && storagePath.isEmpty) return;
+      }
+    } catch (_) {}
+
+    await firestoreWrite(
+      _firestore.collection('users').doc(uid).update(updates),
+    );
+  }
+
+  /// Clears the entire candidate profile (rare — prefer [removeAttachedFile]).
+  Future<void> deleteProfile(String uid) async {
+    final profile = await fetchProfile(uid);
+    if (profile == null) return;
+
+    if (profile.hasFile) {
+      await _deleteCvDocData(profile.toMap());
+    }
+
+    try {
+      await _userCvs(uid).doc(kCandidateProfileDocId).delete();
+    } catch (_) {}
+
+    try {
+      await _firestore.collection('cvs').doc(uid).delete();
+    } catch (_) {}
+
     await firestoreWrite(
       _firestore.collection('users').doc(uid).update({
-        'latestCvId': cv.id,
-        'cvUrl': cv.fileUrl,
-        'profileStrength': cv.profileStrength,
-        if (storagePath.isNotEmpty)
-          'cvStoragePaths': FieldValue.arrayUnion([storagePath]),
+        'latestCvId': FieldValue.delete(),
+        'cvUrl': FieldValue.delete(),
+        'profileStrength': 0,
       }),
     );
   }
 
-  /// Delete a specific CV by id. Legacy doc [cvs/{uid}] is only removed when
-  /// that exact document is the one being deleted.
+  @Deprecated('Use removeAttachedFile or deleteProfile')
   Future<void> deleteCv(String uid, {String? cvId}) async {
-    if (cvId == null || cvId.isEmpty) return;
-
-    final subDoc = await _userCvs(uid).doc(cvId).get();
-    if (subDoc.exists) {
-      await _deleteCvDocData(subDoc.data() as Map<String, dynamic>);
-      await subDoc.reference.delete();
-    } else if (cvId == uid) {
-      final legacy = await _firestore.collection('cvs').doc(uid).get();
-      if (legacy.exists) {
-        await _deleteCvDocData(legacy.data()!);
-        await legacy.reference.delete();
-      }
-    }
-
-    final remaining = await _fetchUserCvs(uid);
-    if (remaining.isNotEmpty) {
-      await _updateUserLatestCv(uid, remaining.first, remaining.first.storagePath);
-    } else {
-      await firestoreWrite(
-        _firestore.collection('users').doc(uid).update({
-          'latestCvId': FieldValue.delete(),
-          'cvUrl': FieldValue.delete(),
-          'profileStrength': 0,
-        }),
-      );
-    }
+    await deleteProfile(uid);
   }
 
   Future<void> _deleteCvDocData(Map<String, dynamic> data) async {
@@ -199,7 +554,8 @@ class CvParserService {
   /// If the legacy doc was removed but [users.cvUrl] still exists, rebuild from that.
   Future<void> migrateLegacyCvIfNeeded(String uid) async {
     try {
-      if ((await _fetchUserCvs(uid)).isNotEmpty) return;
+      final profile = await _userCvs(uid).doc(kCandidateProfileDocId).get();
+      if (profile.exists) return;
 
       final legacy = await _firestore.collection('cvs').doc(uid).get();
       if (legacy.exists) {
@@ -207,7 +563,7 @@ class CvParserService {
           legacy.data() as Map<String, dynamic>,
           docId: uid,
         );
-        await _insertCv(cv, storagePath: cv.storagePath);
+        await _saveProfileDoc(cv.copyWith(id: kCandidateProfileDocId));
         return;
       }
 
@@ -218,7 +574,7 @@ class CvParserService {
 
       final fileName = _fileNameFromUrl(cvUrl);
       final strength = (data?['profileStrength'] as num?)?.toInt() ?? 10;
-      await _insertCv(
+      await _saveProfileDoc(
         CvModel(
           uid: uid,
           fileUrl: cvUrl,
@@ -247,7 +603,7 @@ class CvParserService {
     }
   }
 
-  Future<List<CvModel>> _fetchUserCvs(String uid) async {
+  Future<List<CvModel>> _fetchAllCvDocs(String uid) async {
     final list = <CvModel>[];
 
     try {
@@ -257,21 +613,24 @@ class CvParserService {
       ));
     } catch (_) {}
 
-    try {
-      final legacy = await _firestore.collection('cvs').doc(uid).get();
-      if (legacy.exists) {
-        final legacyCv = CvModel.fromMap(
-          legacy.data() as Map<String, dynamic>,
-          docId: uid,
-        );
-        final duplicate = list.any(
-          (c) =>
-              c.fileUrl == legacyCv.fileUrl &&
-              c.fileUrl.isNotEmpty,
-        );
-        if (!duplicate) list.add(legacyCv);
-      }
-    } catch (_) {}
+    final hasCanonical =
+        list.any((c) => c.id == kCandidateProfileDocId);
+
+    if (!hasCanonical) {
+      try {
+        final legacy = await _firestore.collection('cvs').doc(uid).get();
+        if (legacy.exists) {
+          final legacyCv = CvModel.fromMap(
+            legacy.data() as Map<String, dynamic>,
+            docId: uid,
+          );
+          final duplicate = list.any(
+            (c) => c.fileUrl == legacyCv.fileUrl && c.fileUrl.isNotEmpty,
+          );
+          if (!duplicate) list.add(legacyCv);
+        }
+      } catch (_) {}
+    }
 
     list.sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
     return list;
@@ -279,50 +638,22 @@ class CvParserService {
 
   Future<CvModel?> getCv(String uid, {String? cvId}) async {
     if (cvId != null && cvId.isNotEmpty) {
+      if (cvId == kCandidateProfileDocId || cvId == uid) {
+        return fetchProfile(uid);
+      }
       final doc = await _userCvs(uid).doc(cvId).get();
       if (doc.exists) {
         return CvModel.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id);
       }
-      if (cvId == uid) {
-        final legacy = await _firestore.collection('cvs').doc(uid).get();
-        if (legacy.exists) {
-          return CvModel.fromMap(legacy.data() as Map<String, dynamic>, docId: uid);
-        }
-      }
       return null;
     }
-    final all = await _fetchUserCvs(uid);
-    return all.isEmpty ? null : all.first;
+    return fetchProfile(uid);
   }
 
-  /// Latest CV for dashboard evaluation (most recently uploaded).
-  Stream<CvModel?> cvStream(String uid) {
-    return userCvsStream(uid).map((list) => list.isEmpty ? null : list.first);
-  }
+  Stream<CvModel?> cvStream(String uid) => profileStream(uid);
 
-  /// All CVs for the user, newest first (subcollection + legacy merged).
   Stream<List<CvModel>> userCvsStream(String uid) {
-    return Stream<List<CvModel>>.multi((controller) {
-      Future<void> emitMerged() async {
-        controller.add(await _fetchUserCvs(uid));
-      }
-
-      final subSub = _userCvs(uid).snapshots().listen(
-        (_) => emitMerged(),
-        onError: (_) => emitMerged(),
-      );
-      final legacySub = _firestore.collection('cvs').doc(uid).snapshots().listen(
-        (_) => emitMerged(),
-        onError: (_) => emitMerged(),
-      );
-
-      emitMerged();
-
-      controller.onCancel = () async {
-        await subSub.cancel();
-        await legacySub.cancel();
-      };
-    });
+    return profileStream(uid).map((profile) => profile == null ? [] : [profile]);
   }
 
   Future<String> _uploadToStorage({

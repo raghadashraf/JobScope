@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../core/constants/profile_levels.dart';
+import '../../core/utils/cv_profile_strength.dart';
 import '../../data/models/cv_model.dart';
 import '../../data/models/training_session_model.dart';
 import '../constants/secrets.dart';
@@ -310,7 +312,15 @@ $cvText
         .map((e) => Education.fromMap(Map<String, dynamic>.from(e)))
         .toList();
 
-    final strength = _calculateStrength(skills, workExperience, education);
+    final strength = CvProfileStrength.calculate(
+      skills: skills,
+      workExperience: workExperience,
+      education: education,
+      hasFile: fileUrl.isNotEmpty,
+      experienceLevel:
+          ProfileLevels.inferExperienceLevel(workExperience.length),
+      educationLevel: ProfileLevels.inferEducationLevel(education),
+    );
 
     return CvModel(
       uid: uid,
@@ -320,42 +330,11 @@ $cvText
       skills: skills,
       workExperience: workExperience,
       education: education,
+      experienceLevel:
+          ProfileLevels.inferExperienceLevel(workExperience.length),
+      educationLevel: ProfileLevels.inferEducationLevel(education),
       profileStrength: strength,
     );
-  }
-
-  int _calculateStrength(
-    List<String> skills,
-    List<WorkExperience> experience,
-    List<Education> education,
-  ) {
-    int score = 0;
-
-    // File is present (caller always has a file at this point)
-    score += 10;
-
-    // Skills — 30 pts
-    if (skills.isNotEmpty) score += 10;
-    if (skills.length >= 5) score += 10;
-    if (skills.length >= 10) score += 10;
-
-    // Work Experience — 35 pts
-    if (experience.isNotEmpty) score += 15;
-    if (experience.length >= 2) score += 10;
-    if (experience.length >= 3) score += 5;
-    final withDesc =
-        experience.where((e) => e.description.trim().length > 20).length;
-    if (experience.isNotEmpty && withDesc == experience.length) score += 5;
-
-    // Education — 25 pts
-    if (education.isNotEmpty) score += 15;
-    final hasCompleteEntry = education.any((e) =>
-        e.degree.isNotEmpty &&
-        e.field.isNotEmpty &&
-        e.institution.isNotEmpty);
-    if (hasCompleteEntry) score += 10;
-
-    return score.clamp(0, 100);
   }
 
   // ─── Shared HTTP helper ───────────────────────────────────────────────────
