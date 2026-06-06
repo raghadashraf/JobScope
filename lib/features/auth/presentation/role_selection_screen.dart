@@ -40,17 +40,6 @@ class RoleSelectionScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 28),
 
-                      // Logo
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          height: 48,
-                          fit: BoxFit.contain,
-                          alignment: Alignment.centerRight,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
 
                       // Header
                       Text(
