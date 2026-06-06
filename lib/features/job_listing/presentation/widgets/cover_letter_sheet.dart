@@ -207,11 +207,16 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet>
       });
     }
 
-    return Container(
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      padding: EdgeInsets.only(bottom: bottomInset),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -319,6 +324,7 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet>
                 ),
                 // Write tab
                 SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
@@ -373,6 +379,7 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet>
                 ),
                 // AI tab
                 SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -433,6 +440,7 @@ class _CoverLetterSheetState extends ConsumerState<CoverLetterSheet>
             ),
           ),
         ],
+      ),
       ),
     );
   }
