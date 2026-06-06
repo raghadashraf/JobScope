@@ -18,7 +18,7 @@ const _kPurple = Color(0xFF7C3AED);
 const _kIndigo = Color(0xFF4F46E5);
 const _kGradient = LinearGradient(colors: [_kPurple, _kIndigo]);
 const _kGeminiUrl =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 // ── Data classes ──────────────────────────────────────────────────────────────
 class _Exp {
@@ -244,7 +244,7 @@ class _AiCvBuilderScreenState extends ConsumerState<AiCvBuilderScreen> {
         Uri.parse('$_kGeminiUrl?key=${Secrets.geminiApiKey}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'contents': [{'parts': [{'text': prompt}]}],
-          'generationConfig': {'temperature': 0.4, 'responseMimeType': 'application/json'}}),
+          'generationConfig': {'temperature': 0.4, 'responseMimeType': 'application/json', 'maxOutputTokens': 1024}}),
       );
       if (res.statusCode != 200) throw Exception('AI error (${res.statusCode})');
       final data = jsonDecode(
@@ -323,13 +323,16 @@ class _AiCvBuilderScreenState extends ConsumerState<AiCvBuilderScreen> {
 
   String _buildPrompt() {
     final b = StringBuffer()
-      ..writeln('You are a professional CV writer. Return JSON with "summary" (3-4 sentence first-person professional summary) and "skills" (expanded skill array).')
-      ..writeln('Name: ${_name.text}, Title: ${_title.text}, Location: ${_location.text}')
+      ..writeln('You are a professional CV writer. Return ONLY a JSON object with exactly two keys: "summary" (string: 3-4 sentence first-person professional summary) and "skills" (array of strings).')
+      ..writeln('IMPORTANT: Base the summary and skills STRICTLY on the education, experience, and skills the user provided below. Do NOT invent or add skills from unrelated fields.')
+      ..writeln('Name: ${_name.text}')
+      ..writeln('Job Title / Field: ${_title.text}')
+      ..writeln('Location: ${_location.text}')
       ..writeln('Draft summary: ${_summary.text}')
-      ..writeln('Experience: ${_exps.map((e) => "${e.role} at ${e.company} (${e.startYear}–${e.endYear.isEmpty ? "Present" : e.endYear}): ${e.description}").join("; ")}')
-      ..writeln('Education: ${_edus.map((e) => "${e.degree} in ${e.field} from ${e.institution} (${e.year})").join("; ")}')
-      ..writeln('Skills: ${_skills.join(", ")}')
-      ..writeln('Return ONLY valid JSON.');
+      ..writeln('Work Experience: ${_exps.isEmpty ? "None" : _exps.map((e) => "${e.role} at ${e.company} (${e.startYear}–${e.endYear.isEmpty ? "Present" : e.endYear}): ${e.description}").join("; ")}')
+      ..writeln('Education: ${_edus.isEmpty ? "None" : _edus.map((e) => "${e.degree} in ${e.field} from ${e.institution} (${e.year})").join("; ")}')
+      ..writeln('User-provided skills: ${_skills.isEmpty ? "None" : _skills.join(", ")}')
+      ..writeln('Expand the skills array based ONLY on the field of study, job titles, and experience listed above. Return ONLY the JSON object, nothing else.');
     return b.toString();
   }
 }
