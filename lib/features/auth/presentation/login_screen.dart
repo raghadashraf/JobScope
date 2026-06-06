@@ -171,23 +171,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
                             ),
                             const Spacer(),
-                            Container(
-                              width: 64, height: 64,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.18),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(8),
-                              child: Image.asset('assets/images/logo.png',
-                                  fit: BoxFit.contain),
-                            ),
                             const SizedBox(height: 14),
                             Container(
                               padding: const EdgeInsets.symmetric(

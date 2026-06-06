@@ -18,7 +18,27 @@
       "Bash(nohup flutter run -d chrome > /tmp/jobscope_flutter.log 2>&1 & *)",
       "Bash(awk '{print $2}')",
       "Bash(grep -v \"^$\\\\|@firebase/firestore\")",
-      "Bash(awk '{print $0}')"
+      "Bash(awk '{print $0}')",
+      "Bash(firebase --version)",
+      "Bash(firebase projects:list)",
+      "Bash(firebase deploy *)",
+      "Bash(java -version)",
+      "Bash(/usr/libexec/java_home)",
+      "Read(//Applications/**)",
+      "Bash(flutter doctor *)",
+      "Bash(brew install *)",
+      "Bash(brew list *)",
+      "Read(//Library/Java/JavaVirtualMachines/**)",
+      "Bash(pkill -f \"dart\")",
+      "Bash(python3 -c \"from PIL import Image; img = Image.open\\('/Users/Toto/Documents/GitHub/JobScope/assets/images/logo.png'\\); print\\(img.size, img.mode\\)\")",
+      "Bash(sips -z 614 614 /Users/Toto/Documents/GitHub/JobScope/assets/images/logo.png --out /Users/Toto/Documents/GitHub/JobScope/assets/images/logo_square.png)",
+      "Bash(sips -p 614 614 /Users/Toto/Documents/GitHub/JobScope/assets/images/logo.png --out /Users/Toto/Documents/GitHub/JobScope/assets/images/logo_square.png)",
+      "Bash(python3 -c ' *)",
+      "Bash(sips --getProperty pixelWidth --getProperty pixelHeight /Users/Toto/Documents/GitHub/JobScope/assets/images/logo_square.png)",
+      "Bash(dart run *)",
+      "Bash(sips --getProperty pixelWidth --getProperty pixelHeight --getProperty hasAlpha /Users/Toto/Documents/GitHub/JobScope/assets/images/logo_square.png)",
+      "Bash(pip3 install *)",
+      "Bash(python3 -)"
     ],
     "additionalDirectories": [
       "/private/tmp"
