@@ -237,8 +237,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                               child: _statCard(
                                   icon: Icons.work_rounded,
                                   label: 'Job Matches',
-                                  value: '–',
+                                  value: '${ref.watch(jobMatchCountProvider)}',
                                   color: AppColors.primary,
+                                  count: ref.watch(jobMatchCountProvider),
                                   onTap: () => context.push(AppRoutes.jobs))),
                           const SizedBox(width: 12),
                           Expanded(

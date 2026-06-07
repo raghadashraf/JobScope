@@ -16,6 +16,20 @@ final aiServiceProvider = Provider<AiService>((_) => AiService());
 final jobMatchingServiceProvider =
     Provider<JobMatchingService>((_) => JobMatchingService());
 
+// ─── Job match count (local, no API) ─────────────────────────────────────────
+final jobMatchCountProvider = Provider<int>((ref) {
+  final jobs = ref.watch(jobsStreamProvider).value ?? [];
+  final cv = ref.watch(cvStreamProvider).value;
+  if (cv == null) return 0;
+  final service = ref.read(jobMatchingServiceProvider);
+  return jobs
+      .where((job) =>
+          job.isActive &&
+          !job.isDeleted &&
+          service.structuredMatchScore(cv, job) >= 40)
+      .length;
+});
+
 // ─── Interview questions params ───────────────────────────────────────────────
 class InterviewParams {
   final String jobTitle;
@@ -75,16 +89,9 @@ final matchSortedJobsProvider =
   if (cv == null || cv.skills.isEmpty) return jobs;
 
   final service = ref.read(jobMatchingServiceProvider);
-  final scored = await Future.wait(
-    jobs.map((job) async {
-      try {
-        final result = await service.calculateMatch(cv, job);
-        return (job: job, score: result.score);
-      } catch (_) {
-        return (job: job, score: service.structuredMatchScore(cv, job));
-      }
-    }),
-  );
+  final scored = jobs
+      .map((job) => (job: job, score: service.structuredMatchScore(cv, job)))
+      .toList();
   scored.sort((a, b) => b.score.compareTo(a.score));
   return scored.map((e) => e.job).toList();
 });

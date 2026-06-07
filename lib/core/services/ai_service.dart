@@ -79,7 +79,7 @@ class MatchReason {
 class AiService {
   static String get _apiKey => Secrets.geminiApiKey;
   static const String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
   // ─── CV Parsing ───────────────────────────────────────────────────────────
   Future<CvModel> parseCv({
@@ -201,33 +201,6 @@ Return ONLY a valid JSON array — no markdown, no explanation:
     return parsed
         .map((e) => QuizQuestion.fromMap(Map<String, dynamic>.from(e)))
         .toList();
-  }
-
-  // ─── Job Match Score ──────────────────────────────────────────────────────
-  Future<int> matchJob({
-    required List<String> jobSkills,
-    required List<String> cvSkills,
-    required String jobDescription,
-  }) async {
-    if (cvSkills.isEmpty || jobSkills.isEmpty) return 0;
-
-    final prompt = '''
-You are a job matching expert. Rate how well a candidate matches a job.
-
-Job requirements:
-- Required skills: ${jobSkills.join(', ')}
-- Description: $jobDescription
-
-Candidate skills: ${cvSkills.join(', ')}
-
-Return ONLY a JSON object: {"matchScore": 75}
-Where matchScore is 0-100 based on skill overlap and relevance.
-''';
-
-    final rawText = await _callGemini(prompt, temperature: 0.1);
-    final cleaned = _stripMarkdown(rawText);
-    final Map<String, dynamic> parsed = jsonDecode(cleaned);
-    return ((parsed['matchScore'] as num?)?.toInt() ?? 0).clamp(0, 100);
   }
 
   Future<MatchReason> getMatchReasons({
@@ -357,7 +330,7 @@ $cvText
         'generationConfig': {
           'temperature': temperature,
           'topP': 0.95,
-          'maxOutputTokens': 2048,
+          'maxOutputTokens': 8192,
         },
       }),
     );
