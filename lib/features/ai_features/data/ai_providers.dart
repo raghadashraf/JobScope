@@ -67,18 +67,22 @@ final skillQuizProvider = FutureProvider.autoDispose
         (ref, skills) =>
             ref.read(aiServiceProvider).generateSkillQuiz(skills));
 
-// ─── Job match (embedding similarity) ─────────────────────────────────────────
+// ─── Job match score (local, consistent with sort + dashboard count) ──────────
 final jobMatchResultProvider =
-    FutureProvider.autoDispose.family<MatchResult?, String>((ref, jobId) async {
+    Provider.autoDispose.family<MatchResult?, String>((ref, jobId) {
   final cv = ref.watch(cvStreamProvider).value;
   if (cv == null) return null;
   final hasMatchData = cv.skills.isNotEmpty ||
       ProfileLevels.resolveCandidateExperience(cv) != null ||
       ProfileLevels.resolveCandidateEducation(cv) != null;
   if (!hasMatchData) return null;
-  final job = await ref.read(jobRepositoryProvider).fetchJob(jobId);
+  // Look up from already-loaded jobs stream — no extra Firestore fetch needed
+  final jobs = ref.watch(jobsStreamProvider).value ?? [];
+  final JobModel? job = jobs.where((j) => j.id == jobId).firstOrNull;
   if (job == null) return null;
-  return ref.read(jobMatchingServiceProvider).calculateMatch(cv, job);
+  final service = ref.read(jobMatchingServiceProvider);
+  final score = service.structuredMatchScore(cv, job);
+  return MatchResult(score: score, category: service.categorise(score));
 });
 
 /// Sorts the job list by local skill/level overlap. Embedding scores stay on job detail only.

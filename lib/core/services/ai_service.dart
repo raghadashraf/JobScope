@@ -316,32 +316,48 @@ $cvText
       throw Exception('GEMINI_API_KEY is missing. Add it to your .env file.');
     }
 
-    final response = await http.post(
-      Uri.parse('$_baseUrl?key=$_apiKey'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': [
-              {'text': prompt},
-            ],
-          },
-        ],
-        'generationConfig': {
-          'temperature': temperature,
-          'topP': 0.95,
-          'maxOutputTokens': 8192,
-        },
-      }),
-    );
+    const maxRetries = 4;
+    final delays = [
+      Duration(seconds: 5),
+      Duration(seconds: 10),
+      Duration(seconds: 20),
+    ];
 
-    if (response.statusCode != 200) {
-      throw Exception(
-          'Gemini API error ${response.statusCode}: ${response.body}');
+    for (var attempt = 0; attempt < maxRetries; attempt++) {
+      final response = await http.post(
+        Uri.parse('$_baseUrl?key=$_apiKey'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt},
+              ],
+            },
+          ],
+          'generationConfig': {
+            'temperature': temperature,
+            'topP': 0.95,
+            'maxOutputTokens': 8192,
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['candidates'][0]['content']['parts'][0]['text'] as String;
+      }
+
+      if ((response.statusCode == 503 || response.statusCode == 429) &&
+          attempt < maxRetries - 1) {
+        await Future.delayed(delays[attempt]);
+        continue;
+      }
+
+      throw Exception('Gemini API error ${response.statusCode}: ${response.body}');
     }
 
-    final data = jsonDecode(response.body);
-    return data['candidates'][0]['content']['parts'][0]['text'] as String;
+    throw Exception('Gemini API unavailable. Please try again later.');
   }
 
   // ─── Cover Letter Generation ──────────────────────────────────────────────

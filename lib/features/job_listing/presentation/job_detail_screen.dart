@@ -51,7 +51,7 @@ class JobDetailScreen extends ConsumerWidget {
         !completedTraining.canApply;
 
     // AI match score (only shown when CV is uploaded)
-    final matchAsync = ref.watch(jobMatchResultProvider(job.id));
+    final matchResult = ref.watch(jobMatchResultProvider(job.id));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -187,71 +187,62 @@ class JobDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
 
                   // ── Match Score card ─────────────────────────────────────
-                  matchAsync.when(
-                    data: (result) {
-                      if (result == null) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Match Score',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              MatchBadgeWidget(result: result),
-                              const SizedBox(height: 12),
-                              GestureDetector(
-                                onTap: () {
-                                  showModalBottomSheet<void>(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    backgroundColor: Colors.transparent,
-                                    builder: (ctx) => SizedBox(
-                                      height:
-                                          MediaQuery.of(ctx).size.height *
-                                              0.92,
-                                      child: MatchReasonsSheet(
-                                        jobId: job.id,
-                                        cvSkills: cv?.skills ?? [],
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  'See match reasons',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                  if (matchResult != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
                         ),
-                      );
-                    },
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, _) => const SizedBox.shrink(),
-                  ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Match Score',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            MatchBadgeWidget(result: matchResult),
+                            const SizedBox(height: 12),
+                            GestureDetector(
+                              onTap: () {
+                                showModalBottomSheet<void>(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (ctx) => SizedBox(
+                                    height:
+                                        MediaQuery.of(ctx).size.height * 0.92,
+                                    child: MatchReasonsSheet(
+                                      jobId: job.id,
+                                      cvSkills: cv?.skills ?? [],
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'See match reasons',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
                   // ── Already applied banner ───────────────────────────────
                   if (hasApplied) ...[

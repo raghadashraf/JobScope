@@ -58,7 +58,7 @@ class _JobCardWidgetState extends ConsumerState<JobCardWidget>
     final hasApplied = user != null
         ? (ref.watch(hasAppliedProvider(widget.job.id)).value ?? false)
         : false;
-    final matchAsync = ref.watch(jobMatchResultProvider(widget.job.id));
+    final matchResult = ref.watch(jobMatchResultProvider(widget.job.id));
     return AnimatedBuilder(
       animation: _scaleAnim,
       builder: (context, child) => Transform.scale(
@@ -208,13 +208,10 @@ class _JobCardWidgetState extends ConsumerState<JobCardWidget>
                     ),
                   ),
                   const Spacer(),
-                  matchAsync.when(
-                    data: (result) => result != null
-                        ? MatchBadgeWidget(result: result)
-                        : const SizedBox.shrink(),
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, _) => const SizedBox.shrink(),
-                  ),
+                  if (matchResult != null)
+                    MatchBadgeWidget(result: matchResult)
+                  else
+                    const SizedBox.shrink(),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

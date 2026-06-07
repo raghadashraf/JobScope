@@ -78,10 +78,10 @@ class CoachChatNotifier extends Notifier<bool> {
         role: MessageRole.assistant,
         createdAt: DateTime.now(),
       ).toMap());
-    } catch (_) {
+    } catch (e) {
       await chatCol.add(ChatMessage(
         id: '',
-        content: 'Sorry, I ran into an issue. Please try again.',
+        content: 'Sorry, I ran into an issue. Please try again in a moment.',
         role: MessageRole.assistant,
         createdAt: DateTime.now(),
       ).toMap());
@@ -114,7 +114,9 @@ class CoachChatNotifier extends Notifier<bool> {
     buffer.writeln(
         'Be concise, encouraging, and highly specific to the candidate\'s data.');
     buffer.writeln(
-        'Give actionable advice. Use bullet points where helpful. Keep answers under 200 words unless asked for detail.');
+        'Give actionable advice. Keep answers under 200 words unless asked for detail.');
+    buffer.writeln(
+        'IMPORTANT: Reply in plain text only. No markdown, no asterisks, no bold, no bullet symbols. Use numbered lists (1. 2. 3.) or plain dashes (-) if listing items.');
     buffer.writeln();
 
     if (cv != null) {
