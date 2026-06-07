@@ -26,6 +26,8 @@ class CandidateHomeScreen extends ConsumerStatefulWidget {
 class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
+  /// Only mount tabs the user has opened — avoids loading Jobs (match sort) on login.
+  final Set<int> _visitedTabs = {0};
   final Map<String, String> _lastStatuses = {};
 
   late final List<AnimationController> _iconCtrls;
@@ -76,7 +78,10 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
   void _onTap(int i) {
     if (i == _currentIndex) return;
     _iconCtrls[_currentIndex].reverse();
-    setState(() => _currentIndex = i);
+    setState(() {
+      _visitedTabs.add(i);
+      _currentIndex = i;
+    });
     _iconCtrls[i].forward();
   }
 
@@ -112,7 +117,15 @@ class _CandidateHomeScreenState extends ConsumerState<CandidateHomeScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: List.generate(_screens.length, (i) {
+          if (!_visitedTabs.contains(i)) {
+            return const SizedBox.shrink();
+          }
+          return _screens[i];
+        }),
+      ),
       floatingActionButton: _CoachFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: AppNavBar(

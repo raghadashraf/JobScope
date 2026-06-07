@@ -81,19 +81,22 @@ final jobMatchResultProvider =
   return ref.read(jobMatchingServiceProvider).calculateMatch(cv, job);
 });
 
-final matchSortedJobsProvider =
-    FutureProvider.autoDispose<List<JobModel>>((ref) async {
+/// Sorts the job list by local skill/level overlap. Embedding scores stay on job detail only.
+final matchSortedJobsProvider = Provider<AsyncValue<List<JobModel>>>((ref) {
   final jobsAsync = ref.watch(filteredJobsProvider);
-  final jobs = jobsAsync.value ?? [];
-  final cv = ref.watch(cvStreamProvider).value;
-  if (cv == null || cv.skills.isEmpty) return jobs;
+  return jobsAsync.whenData((jobs) {
+    final cv = ref.watch(cvStreamProvider).value;
+    if (cv == null || cv.skills.isEmpty) return jobs;
 
-  final service = ref.read(jobMatchingServiceProvider);
-  final scored = jobs
-      .map((job) => (job: job, score: service.structuredMatchScore(cv, job)))
-      .toList();
-  scored.sort((a, b) => b.score.compareTo(a.score));
-  return scored.map((e) => e.job).toList();
+    final service = ref.read(jobMatchingServiceProvider);
+    final sorted = List<JobModel>.from(jobs);
+    sorted.sort(
+      (a, b) => service
+          .structuredMatchScore(cv, b)
+          .compareTo(service.structuredMatchScore(cv, a)),
+    );
+    return sorted;
+  });
 });
 
 class MatchReasonsParams {

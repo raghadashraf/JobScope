@@ -20,6 +20,7 @@ class RecruiterHomeScreen extends ConsumerStatefulWidget {
 
 class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen>
     with TickerProviderStateMixin {
+  final Set<int> _visitedTabs = {0};
 
   static const _navItems = [
     NavItem(icon: Icons.dashboard_rounded, outlinedIcon: Icons.dashboard_outlined, label: 'Dashboard'),
@@ -68,6 +69,7 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen>
 
   void _onTap(int i) {
     if (i == ref.read(recruiterTabIndexProvider)) return;
+    setState(() => _visitedTabs.add(i));
     ref.read(recruiterTabIndexProvider.notifier).select(i);
   }
 
@@ -77,6 +79,7 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen>
     final tabIndex = ref.watch(recruiterTabIndexProvider);
     ref.listen(recruiterTabIndexProvider, (prev, next) {
       if (prev != null && prev != next) {
+        setState(() => _visitedTabs.add(next));
         _iconCtrls[prev].reverse();
         _iconCtrls[next].forward();
       }
@@ -84,7 +87,15 @@ class _RecruiterHomeScreenState extends ConsumerState<RecruiterHomeScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(index: tabIndex, children: _screens),
+      body: IndexedStack(
+        index: tabIndex,
+        children: List.generate(_screens.length, (i) {
+          if (!_visitedTabs.contains(i)) {
+            return const SizedBox.shrink();
+          }
+          return _screens[i];
+        }),
+      ),
       bottomNavigationBar: AppNavBar(
         items: _navItems,
         currentIndex: tabIndex,
